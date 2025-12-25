@@ -28,6 +28,8 @@ import { EmailWidget } from './components/widgets/EmailWidget';
 import { CalendarWidget } from './components/widgets/CalendarWidget';
 import { WaterTrackerWidget } from './components/widgets/WaterTrackerWidget';
 import { DarkModeWidget } from './components/widgets/DarkModeWidget';
+import { WorkTrackerWidget } from './components/widgets/WorkTrackerWidget';
+import { WorkReportsWidget } from './components/widgets/WorkReportsWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { SortableWidget } from './components/SortableWidget';
 import { UserSettings, WidgetInstance, WidgetConfig } from './types';
@@ -44,6 +46,8 @@ const DEFAULT_WIDGETS: WidgetInstance[] = [
   { id: 'email', type: 'email', size: 'medium' },
   { id: 'calendar', type: 'calendar', size: 'large' },
   { id: 'water', type: 'water', size: 'small' },
+  { id: 'work', type: 'work', size: 'large' },
+  { id: 'work-reports', type: 'work-reports', size: 'large' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 
@@ -263,6 +267,22 @@ export default function App() {
             onConfigChange={(c) => updateWidgetConfig(widget.id, c)}
           />
         );
+      case 'work':
+        return (
+          <WorkTrackerWidget
+            {...commonProps}
+            config={configs[widget.id] || {}}
+            onConfigChange={(c) => updateWidgetConfig(widget.id, c)}
+          />
+        );
+      case 'work-reports':
+        return (
+          <WorkReportsWidget
+            {...commonProps}
+            config={configs[widget.id] || {}}
+            onToggleSettings={() => toggleWidgetSettings(widget.id)}
+          />
+        );
       case 'darkmode':
         return (
           <DarkModeWidget 
@@ -334,13 +354,13 @@ export default function App() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <main className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-min pb-20">
+        <main className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 auto-rows-min pb-20">
           <SortableContext 
             items={widgets.map(w => w.id)}
             strategy={rectSortingStrategy}
           >
             {widgets.map((widget) => (
-              <SortableWidget key={widget.id} id={widget.id} widget={widget} isEditMode={isEditMode} onRemove={() => removeWidget(widget.id)}>
+              <SortableWidget key={widget.id} id={widget.id} widget={widget} isEditMode={isEditMode} onRemove={() => removeWidget(widget.id)} onSizeChange={(s) => updateWidgetSize(widget.id, s as any)}>
                 {renderWidget(widget)}
               </SortableWidget>
             ))}
@@ -374,13 +394,15 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {['youtube', 'email', 'calendar', 'water', 'darkmode'].map(type => {
+              {['youtube', 'email', 'calendar', 'water', 'work', 'work-reports', 'darkmode'].map(type => {
                 const isAdded = widgets.some(w => w.type === type);
                 const labels: Record<string, string> = {
                   youtube: '📺 YouTube',
                   email: '📧 Gmail',
                   calendar: '📅 Calendar',
                   water: '💧 Water',
+                  work: '💼 Work Tracker',
+                  'work-reports': '📈 Work Reports',
                   darkmode: '🌙 Dark Mode'
                 };
 

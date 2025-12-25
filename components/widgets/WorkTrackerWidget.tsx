@@ -8,8 +8,8 @@ interface WorkTrackerWidgetProps {
   onConfigChange: (config: Partial<WorkConfig>) => void;
   isSettingsOpen: boolean;
   onToggleSettings: () => void;
-  onSizeChange: (size: string) => void;
-  widgetSize: string;
+  onSizeChange?: (size: string) => void;  // Deprecated - size managed via edit mode
+  widgetSize?: string;
   dragHandleProps?: any;
 }
 
@@ -25,7 +25,7 @@ export const WorkTrackerWidget: React.FC<WorkTrackerWidgetProps> = ({
   isSettingsOpen,
   onToggleSettings,
   onSizeChange,
-  widgetSize,
+  widgetSize = 'large',
   dragHandleProps
 }) => {
   const hourlyRate = typeof config.hourlyRate === 'number' ? config.hourlyRate : 20;
@@ -90,7 +90,7 @@ export const WorkTrackerWidget: React.FC<WorkTrackerWidgetProps> = ({
         <label className="text-xs text-slate-400">Widget Size</label>
         <select
           value={widgetSize}
-          onChange={(e) => onSizeChange(e.target.value)}
+          onChange={(e) => onSizeChange?.(e.target.value)}
           className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
         >
           <option value="small">Small</option>

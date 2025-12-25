@@ -37,13 +37,15 @@ export type WidgetSize = 'small' | 'medium' | 'large';
 
 export interface WidgetInstance {
   id: string;
-  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode';
+  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode' | 'work';
   size: WidgetSize;
 }
 
 export interface WidgetConfig {
   [key: string]: any;
 }
+
+// Add reports widget config marker (uses same WorkConfig sessions)
 
 export interface WeatherConfig extends WidgetConfig {
   city?: string;
@@ -90,4 +92,18 @@ export interface WaterConfig extends WidgetConfig {
   dailyGoal: number; // in cups
   consumed: number; // in cups
   lastReset: string; // ISO date string
+}
+
+export interface WorkSession {
+  id: string;
+  start?: string; // ISO
+  end?: string; // ISO
+  durationHours?: number;
+  note?: string;
+}
+
+export interface WorkConfig extends WidgetConfig {
+  hourlyRate?: number;
+  sessions?: WorkSession[];
+  currentStart?: string | null;
 }
