@@ -29,6 +29,7 @@ export async function generateDailyBriefing(userName: string, contextTime: strin
 
     // Prefer recent Gemini models available to this key. Try several fallbacks.
     const preferredModels = [
+      'gemma-3-27b'
       'gemini-2.5-pro',
       'gemini-2.5-flash',
       'gemini-2.0-flash',
