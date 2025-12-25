@@ -32,12 +32,7 @@ export async function generateDailyBriefing(userName: string, contextTime: strin
       'gemma-3-27b',
       'gemini-2.5-pro',
       'gemini-2.5-flash',
-<<<<<<< Updated upstream
-      'gemini-2.0-flash'
-=======
       'gemini-2.0-flash',
-      'gemma-3-27b'
->>>>>>> Stashed changes
     ];
 
     let lastErr: any = null;
