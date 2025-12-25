@@ -1,0 +1,7 @@
+{
+  "name": "SmartGlance Dashboard",
+  "description": "A beautiful, customizable personal dashboard inspired by Glance. Features a smart daily briefing powered by Gemini, live weather, news feeds, and quick links.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
