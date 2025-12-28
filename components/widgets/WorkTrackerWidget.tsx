@@ -100,7 +100,7 @@ export const WorkTrackerWidget: React.FC<WorkTrackerWidgetProps> = ({
       </div>
 
       <div className="space-y-2 pt-2 border-t border-white/10">
-        <label className="text-xs text-slate-400">Hourly Rate</label>
+        <label className="text-xs text-slate-400">Hourly Rate "6,93"</label>
         <input
           type="number"
           value={hourlyRate}
