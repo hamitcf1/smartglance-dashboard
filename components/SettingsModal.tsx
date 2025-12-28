@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, RotateCw } from 'lucide-react';
 import { UserSettings } from '../types';
 import { useTheme } from '../services/theme';
 
@@ -7,9 +7,10 @@ interface SettingsModalProps {
   settings: UserSettings;
   onClose: () => void;
   onSave: (settings: UserSettings) => void;
+  onRestartOnboarding?: () => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose, onSave }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose, onSave, onRestartOnboarding }) => {
   const [localSettings, setLocalSettings] = React.useState<UserSettings>(settings);
   const { isDarkMode } = useTheme();
 
@@ -41,6 +42,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose,
               onChange={(e) => handleChange('userName', e.target.value)}
               className={`w-full rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors ${isDarkMode ? 'bg-white/5 border border-white/10 text-white' : 'bg-white border border-slate-300 text-slate-900'}`}
             />
+          </div>
+
+          <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-300'}`}>
+            <button
+              onClick={() => {
+                onRestartOnboarding?.();
+                onClose();
+              }}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
+                isDarkMode
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              <RotateCw className="w-4 h-4" />
+              Restart Setup Wizard
+            </button>
+            <p className={`text-xs mt-2 ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+              Go through the onboarding process again to reconfigure your dashboard
+            </p>
           </div>
 
           <div className="space-y-4">

@@ -120,6 +120,11 @@ export default function App() {
     setHasCompletedOnboarding(true);
   };
 
+  const handleRestartOnboarding = () => {
+    setHasCompletedOnboarding(false);
+    localStorage.removeItem('smart-glance-onboarding-complete');
+  };
+
   // --- Handlers ---
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -455,6 +460,7 @@ export default function App() {
           settings={settings}
           onClose={() => setIsGlobalSettingsOpen(false)}
           onSave={setSettings}
+          onRestartOnboarding={handleRestartOnboarding}
         />
       )}
     </div>
