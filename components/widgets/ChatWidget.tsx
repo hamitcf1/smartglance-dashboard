@@ -27,7 +27,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
 }) => {
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('smart-glance-chat-messages');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return parsed.map((msg: any) => ({
+      ...msg,
+      timestamp: new Date(msg.timestamp)
+    }));
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -151,7 +156,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                   >
                     <p className="break-words">{msg.content}</p>
                     <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-indigo-200' : 'text-slate-400'}`}>
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {msg.timestamp instanceof Date ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </p>
                   </div>
                 </div>
