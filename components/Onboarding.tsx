@@ -20,6 +20,8 @@ const AVAILABLE_WIDGETS = [
   { type: 'work', label: '💼 Work Tracker', description: 'Work sessions & billing' },
   { type: 'work-reports', label: '📈 Work Reports', description: 'Work analytics' },
   { type: 'darkmode', label: '🌙 Dark Mode', description: 'Theme toggle' },
+  { type: 'chat', label: '💬 Gemini Chat', description: 'AI conversation with Gemini' },
+  { type: 'currency', label: '💱 Currency Rates', description: 'USD, EUR, GBP, Gold, Silver' },
 ];
 
 const COMMON_TIMEZONES = [

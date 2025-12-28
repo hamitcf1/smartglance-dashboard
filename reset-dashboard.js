@@ -12,6 +12,8 @@ const DEFAULT_WIDGETS = [
   { id: 'water', type: 'water', size: 'small' },
   { id: 'work', type: 'work', size: 'large' },
   { id: 'work-reports', type: 'work-reports', size: 'large' },
+  { id: 'chat', type: 'chat', size: 'large' },
+  { id: 'currency', type: 'currency', size: 'medium' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 

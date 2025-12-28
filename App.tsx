@@ -30,6 +30,8 @@ import { WaterTrackerWidget } from './components/widgets/WaterTrackerWidget';
 import { DarkModeWidget } from './components/widgets/DarkModeWidget';
 import { WorkTrackerWidget } from './components/widgets/WorkTrackerWidget';
 import { WorkReportsWidget } from './components/widgets/WorkReportsWidget';
+import { ChatWidget } from './components/widgets/ChatWidget';
+import { CurrencyWidget } from './components/widgets/CurrencyWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { SortableWidget } from './components/SortableWidget';
 import { Onboarding } from './components/Onboarding';
@@ -49,6 +51,8 @@ const DEFAULT_WIDGETS: WidgetInstance[] = [
   { id: 'water', type: 'water', size: 'small' },
   { id: 'work', type: 'work', size: 'large' },
   { id: 'work-reports', type: 'work-reports', size: 'large' },
+  { id: 'chat', type: 'chat', size: 'large' },
+  { id: 'currency', type: 'currency', size: 'medium' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 
@@ -300,6 +304,19 @@ export default function App() {
             {...commonProps}
           />
         );
+      case 'chat':
+        return (
+          <ChatWidget
+            {...commonProps}
+          />
+        );
+      case 'currency':
+        return (
+          <CurrencyWidget
+            {...commonProps}
+            refreshTrigger={refreshTrigger}
+          />
+        );
       default:
         return null;
     }
@@ -410,7 +427,7 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {['youtube', 'email', 'calendar', 'water', 'work', 'work-reports', 'darkmode'].map(type => {
+              {['youtube', 'email', 'calendar', 'water', 'work', 'work-reports', 'chat', 'currency', 'darkmode'].map(type => {
                 const isAdded = widgets.some(w => w.type === type);
                 const labels: Record<string, string> = {
                   youtube: '📺 YouTube',
@@ -419,6 +436,8 @@ export default function App() {
                   water: '💧 Water',
                   work: '💼 Work Tracker',
                   'work-reports': '📈 Work Reports',
+                  chat: '💬 Chat',
+                  currency: '💱 Currency',
                   darkmode: '🌙 Dark Mode'
                 };
 

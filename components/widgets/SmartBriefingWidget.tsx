@@ -27,10 +27,36 @@ export const SmartBriefingWidget: React.FC<SmartBriefingProps> = ({
 
   useEffect(() => {
     const fetchBriefing = async () => {
+      // Get cached briefing for today
+      const today = new Date().toDateString();
+      const cache = localStorage.getItem('smart-glance-briefing-cache');
+      
+      if (cache) {
+        try {
+          const { date, content } = JSON.parse(cache);
+          if (date === today && content) {
+            // Use cached briefing from today
+            setBriefing(content);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error('Cache parsing failed:', e);
+        }
+      }
+
+      // Generate new briefing if cache is invalid or expired
       setLoading(true);
       const timeString = new Date().toLocaleString();
       const text = await generateDailyBriefing(userName, timeString);
       setBriefing(text);
+      
+      // Cache the briefing for today
+      localStorage.setItem('smart-glance-briefing-cache', JSON.stringify({
+        date: today,
+        content: text
+      }));
+      
       setLoading(false);
     };
 
