@@ -219,7 +219,7 @@ export const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({
           <p className="text-sm text-red-400">{error}</p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-2 pr-2">
           {rates.map(rate => (
             <div
               key={rate.symbol}
