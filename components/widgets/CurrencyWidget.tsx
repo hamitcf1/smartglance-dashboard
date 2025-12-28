@@ -37,39 +37,73 @@ export const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch exchange rates from exchangerate.host
+  // Fetch exchange rates from exchangeratesapi.io
   const fetchExchangeRates = async () => {
     try {
-      const response = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=TRY,EUR,GBP');
+      // Using exchangeratesapi.io with TRY as base
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/TRY');
       const data = await response.json();
       
-      if (!data.rates || !data.rates.TRY) throw new Error('Invalid response');
-      
-      const usdRate = data.rates.TRY;
-      const eurRate = data.rates.EUR ? (data.rates.TRY / data.rates.EUR) : 0;
-      const gbpRate = data.rates.GBP ? (data.rates.TRY / data.rates.GBP) : 0;
-      
-      return [
-        { symbol: 'USD', name: 'Dollar', rate: usdRate },
-        { symbol: 'EUR', name: 'Euro', rate: eurRate },
-        { symbol: 'GBP', name: 'Pound', rate: gbpRate }
-      ];
+      if (data.rates) {
+        const usdRate = 1 / (data.rates.USD || 1);
+        const eurRate = 1 / (data.rates.EUR || 1);
+        const gbpRate = 1 / (data.rates.GBP || 1);
+        
+        return [
+          { symbol: 'USD', name: 'Dollar', rate: usdRate },
+          { symbol: 'EUR', name: 'Euro', rate: eurRate },
+          { symbol: 'GBP', name: 'Pound', rate: gbpRate }
+        ];
+      }
     } catch (err) {
       console.error('Exchange rates fetch error:', err);
-      return [];
     }
+    
+    // Fallback to hardcoded rates if API fails
+    return [
+      { symbol: 'USD', name: 'Dollar', rate: 33.50 },
+      { symbol: 'EUR', name: 'Euro', rate: 36.20 },
+      { symbol: 'GBP', name: 'Pound', rate: 42.50 }
+    ];
   };
 
-  // Mock gold price (in TRY per gram) - using approximate market value
+  // Fetch gold price - using approximate market rates
   const fetchGoldPrice = async () => {
-    // Approximate: ~2850 TRY per gram (can be updated manually)
-    return 2850;
+    try {
+      // Gramı Altın API endpoint
+      const response = await fetch('https://api.aydinyilmaz.com.tr/service/dss/today/goldprices');
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        // Looking for Gram Altın
+        const gold = data.find((item: any) => item.code === 'GRAM');
+        if (gold && gold.selling) {
+          return parseFloat(gold.selling);
+        }
+      }
+    } catch (err) {
+      console.error('Gold price fetch error:', err);
+    }
+    return 2900; // Fallback
   };
 
-  // Mock silver price (in TRY per gram) - using approximate market value
+  // Fetch silver price
   const fetchSilverPrice = async () => {
-    // Approximate: ~95 TRY per gram (can be updated manually)
-    return 95;
+    try {
+      // Gümüş Fiyatı API endpoint
+      const response = await fetch('https://api.aydinyilmaz.com.tr/service/dss/today/silverprices');
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const silver = data.find((item: any) => item.code === 'GRAM');
+        if (silver && silver.selling) {
+          return parseFloat(silver.selling);
+        }
+      }
+    } catch (err) {
+      console.error('Silver price fetch error:', err);
+    }
+    return 95; // Fallback
   };
 
   const fetchRates = async () => {
