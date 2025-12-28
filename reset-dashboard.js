@@ -10,6 +10,8 @@ const DEFAULT_WIDGETS = [
   { id: 'email', type: 'email', size: 'medium' },
   { id: 'calendar', type: 'calendar', size: 'large' },
   { id: 'water', type: 'water', size: 'small' },
+  { id: 'work', type: 'work', size: 'large' },
+  { id: 'work-reports', type: 'work-reports', size: 'large' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 

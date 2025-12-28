@@ -37,7 +37,7 @@ export type WidgetSize = 'small' | 'medium' | 'large';
 
 export interface WidgetInstance {
   id: string;
-  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode' | 'work';
+  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode' | 'work' | 'work-reports';
   size: WidgetSize;
 }
 

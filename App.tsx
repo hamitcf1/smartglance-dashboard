@@ -32,6 +32,7 @@ import { WorkTrackerWidget } from './components/widgets/WorkTrackerWidget';
 import { WorkReportsWidget } from './components/widgets/WorkReportsWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { SortableWidget } from './components/SortableWidget';
+import { Onboarding } from './components/Onboarding';
 import { UserSettings, WidgetInstance, WidgetConfig } from './types';
 
 // Default layout
@@ -62,6 +63,11 @@ const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export default function App() {
+  // --- Onboarding State ---
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
+    return localStorage.getItem('smart-glance-onboarding-complete') === 'true';
+  });
+
   // --- State ---
   const [settings, setSettings] = useState<UserSettings>(() => {
     const saved = localStorage.getItem('smart-glance-settings');
@@ -70,21 +76,9 @@ export default function App() {
 
   const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
     const saved = localStorage.getItem('smart-glance-layout');
-    const loaded = saved ? JSON.parse(saved) : DEFAULT_WIDGETS;
-    
-    // If user has old layout without new widgets, add them
-    const newWidgetIds = ['youtube', 'email', 'calendar', 'water', 'darkmode'];
-    const hasAllWidgets = newWidgetIds.every(id => loaded.some((w: WidgetInstance) => w.type === id));
-    
-    if (!hasAllWidgets) {
-      // Add missing widgets
-      const defaultNewWidgets = DEFAULT_WIDGETS.filter((w: WidgetInstance) => 
-        newWidgetIds.includes(w.type)
-      );
-      return [...loaded, ...defaultNewWidgets];
-    }
-    
-    return loaded;
+    // Simply return what's saved, or default if nothing saved
+    // Do NOT auto-add missing widgets - respect user deletions
+    return saved ? JSON.parse(saved) : DEFAULT_WIDGETS;
   });
 
   const [configs, setConfigs] = useState<Record<string, WidgetConfig>>(() => {
@@ -113,6 +107,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('smart-glance-configs', JSON.stringify(configs));
   }, [configs]);
+
+  // --- Onboarding Handler ---
+  const handleOnboardingComplete = (
+    newSettings: UserSettings,
+    newWidgets: WidgetInstance[],
+    newConfigs: Record<string, WidgetConfig>
+  ) => {
+    setSettings(newSettings);
+    setWidgets(newWidgets);
+    setConfigs(newConfigs);
+    setHasCompletedOnboarding(true);
+  };
 
   // --- Handlers ---
   const handleRefresh = () => {
@@ -307,6 +313,11 @@ export default function App() {
   const buttonHoverClasses = isDarkMode
     ? 'hover:bg-white/10 text-slate-400 hover:text-white'
     : 'hover:bg-slate-300/50 text-slate-600 hover:text-slate-900';
+
+  // Show onboarding if not completed
+  if (!hasCompletedOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className={`min-h-screen ${bgClasses} p-4 sm:p-8`}>
