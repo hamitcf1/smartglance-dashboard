@@ -27,6 +27,7 @@ export async function generateContent(prompt: string): Promise<string> {
     
     for (const modelName of PREFERRED_MODELS) {
       try {
+        console.log(`Trying model: ${modelName}`);
         const model = genAI.getGenerativeModel({ model: modelName });
         const response = await model.generateContent(prompt);
 
@@ -41,17 +42,32 @@ export async function generateContent(prompt: string): Promise<string> {
         }
 
         if (textContent && textContent.trim()) {
+          console.log(`Success with model: ${modelName}`);
           return textContent;
         }
       } catch (err: any) {
         lastErr = err;
-        // Try next model
+        const errorStr = JSON.stringify(err);
+        console.warn(`Model ${modelName} failed:`, err?.message || err);
+        
+        // Check for quota error and continue to next model
+        if (errorStr.includes('429') || errorStr.includes('quota') || errorStr.includes('RESOURCE_EXHAUSTED')) {
+          console.log(`Quota exceeded for ${modelName}, trying next model...`);
+          continue;
+        }
+        // Continue trying other models
         continue;
       }
     }
 
     // If all attempts failed, throw last error
-    if (lastErr) throw lastErr;
+    if (lastErr) {
+      const errorStr = JSON.stringify(lastErr);
+      if (errorStr.includes('429') || errorStr.includes('quota') || errorStr.includes('RESOURCE_EXHAUSTED')) {
+        throw new Error("API Quota Exceeded: All models have exhausted quota. Try again later.");
+      }
+      throw lastErr;
+    }
     throw new Error("All models failed to generate content");
   } catch (error: any) {
     console.error("Error generating content:", error);
@@ -60,7 +76,7 @@ export async function generateContent(prompt: string): Promise<string> {
     if (errorMessage.includes('API_KEY') || errorMessage.includes('api_key') || errorMessage.includes('invalid')) {
       throw new Error("Setup Error: Check your Gemini API key. See API_SETUP.md for instructions.");
     }
-    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+    if (errorMessage.includes('quota') || errorMessage.includes('429') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
       throw new Error("API Quota Exceeded: Try again later or upgrade your Gemini API quota.");
     }
     throw error;

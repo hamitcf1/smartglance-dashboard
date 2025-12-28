@@ -78,13 +78,22 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Error:', error);
-      const errorMessage: Message = {
+      let errorMsg = 'Sorry, I encountered an error. Please try again.';
+      
+      const errStr = error?.message || '';
+      if (errStr.includes('Quota')) {
+        errorMsg = '⚠️ API Quota Exceeded: Daily limit reached. Try again tomorrow or check your API plan.';
+      } else if (errStr.includes('Setup Error') || errStr.includes('API key')) {
+        errorMsg = '⚠️ Setup Error: Gemini API key not configured. Check API_SETUP.md.';
+      }
+      
+      const assistantErrorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: error?.message || 'Sorry, I encountered an error. Please try again.',
+        content: errorMsg,
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, assistantErrorMessage]);
     } finally {
       setIsLoading(false);
     }
