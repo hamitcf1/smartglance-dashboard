@@ -216,7 +216,7 @@ export const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({
           ))}
           {rates.length > 0 && (
             <p className="text-xs text-slate-500 mt-3 text-center">
-              Last updated: {rates[0].lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Last updated: {rates[0].lastUpdated instanceof Date ? rates[0].lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
             </p>
           )}
         </div>
