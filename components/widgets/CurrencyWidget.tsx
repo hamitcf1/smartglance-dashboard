@@ -42,95 +42,87 @@ export const CurrencyWidget: React.FC<CurrencyWidgetProps> = ({
     setError(null);
 
     try {
-      // Get exchange rates from open-exchange-rates or similar API
-      // For demo, using mockData - in production use real API
-      const [usdResponse, eurResponse, gbpResponse, goldResponse] = await Promise.all([
-        fetch('https://api.exchangerate-api.com/v4/latest/USD'),
-        fetch('https://api.exchangerate-api.com/v4/latest/EUR'),
-        fetch('https://api.exchangerate-api.com/v4/latest/GBP'),
-        // Gold API - using a simple endpoint
-        fetch('https://api.metals.live/v1/spot/gold')
+      // Using exchangerate.host API (CORS-friendly)
+      const rates = await Promise.allSettled([
+        fetch('https://api.exchangerate.host/latest?base=USD&symbols=TRY').then(r => r.json()),
+        fetch('https://api.exchangerate.host/latest?base=EUR&symbols=TRY').then(r => r.json()),
+        fetch('https://api.exchangerate.host/latest?base=GBP&symbols=TRY').then(r => r.json()),
       ]);
 
       let newRates: Rate[] = [];
+      const now = new Date();
 
-      if (usdResponse.ok) {
-        const data = await usdResponse.json();
-        const usdRate = data.rates.TRY || 0;
+      // USD
+      if (rates[0].status === 'fulfilled' && rates[0].value?.rates?.TRY) {
         newRates.push({
           symbol: 'USD',
           name: 'Dollar',
-          rate: usdRate,
-          lastUpdated: new Date()
+          rate: rates[0].value.rates.TRY,
+          lastUpdated: now
+        });
+      } else {
+        newRates.push({
+          symbol: 'USD',
+          name: 'Dollar',
+          rate: 0,
+          lastUpdated: now
         });
       }
 
-      if (eurResponse.ok) {
-        const data = await eurResponse.json();
-        const eurRate = data.rates.TRY || 0;
+      // EUR
+      if (rates[1].status === 'fulfilled' && rates[1].value?.rates?.TRY) {
         newRates.push({
           symbol: 'EUR',
           name: 'Euro',
-          rate: eurRate,
-          lastUpdated: new Date()
+          rate: rates[1].value.rates.TRY,
+          lastUpdated: now
+        });
+      } else {
+        newRates.push({
+          symbol: 'EUR',
+          name: 'Euro',
+          rate: 0,
+          lastUpdated: now
         });
       }
 
-      if (gbpResponse.ok) {
-        const data = await gbpResponse.json();
-        const gbpRate = data.rates.TRY || 0;
+      // GBP
+      if (rates[2].status === 'fulfilled' && rates[2].value?.rates?.TRY) {
         newRates.push({
           symbol: 'GBP',
           name: 'Pound',
-          rate: gbpRate,
-          lastUpdated: new Date()
+          rate: rates[2].value.rates.TRY,
+          lastUpdated: now
         });
-      }
-
-      if (goldResponse.ok) {
-        const data = await goldResponse.json();
-        // Gold price is in USD, convert to TRY if we have USD rate
-        const goldUSD = data.gold || 0;
-        const usdRate = newRates.find(r => r.symbol === 'USD')?.rate || 33;
+      } else {
         newRates.push({
-          symbol: 'GOLD',
-          name: 'Gold (gr)',
-          rate: goldUSD * usdRate,
-          lastUpdated: new Date()
+          symbol: 'GBP',
+          name: 'Pound',
+          rate: 0,
+          lastUpdated: now
         });
       }
 
-      // Silver - similar to gold
-      try {
-        const silverResponse = await fetch('https://api.metals.live/v1/spot/silver');
-        if (silverResponse.ok) {
-          const data = await silverResponse.json();
-          const silverUSD = data.silver || 0;
-          const usdRate = newRates.find(r => r.symbol === 'USD')?.rate || 33;
-          newRates.push({
-            symbol: 'SILVER',
-            name: 'Silver (gr)',
-            rate: silverUSD * usdRate,
-            lastUpdated: new Date()
-          });
-        }
-      } catch (e) {
-        console.error('Silver fetch failed:', e);
-      }
-
-      // Fill missing rates with previous data
-      setRates(prev => {
-        const merged = [...newRates];
-        for (const prevRate of prev) {
-          if (!merged.find(r => r.symbol === prevRate.symbol)) {
-            merged.push(prevRate);
-          }
-        }
-        return merged;
+      // Gold and Silver - Using mock data for now (requires API key)
+      // In production, integrate with proper metals API
+      newRates.push({
+        symbol: 'GOLD',
+        name: 'Gold (gr)',
+        rate: 2850, // Approximate value in TRY
+        lastUpdated: now
       });
+
+      newRates.push({
+        symbol: 'SILVER',
+        name: 'Silver (gr)',
+        rate: 95.50, // Approximate value in TRY
+        lastUpdated: now
+      });
+
+      setRates(newRates);
     } catch (err) {
       console.error('Failed to fetch rates:', err);
-      setError('Could not fetch exchange rates');
+      setError('Could not fetch exchange rates. Please try again.');
     } finally {
       setLoading(false);
     }

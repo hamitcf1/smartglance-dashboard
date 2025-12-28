@@ -4,13 +4,71 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // IMPORTANT: process.env.API_KEY is injected by the environment.
 const genAI = new GoogleGenerativeAI(process.env.API_KEY || "");
 
-export async function generateDailyBriefing(userName: string, contextTime: string, weatherSummary?: string): Promise<string> {
+// Preferred models in order of preference
+const PREFERRED_MODELS = [
+  'gemma-3-27b',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+];
+
+/**
+ * Generic function to generate content using Gemini API
+ * Handles API key validation, model fallbacks, and error handling
+ */
+export async function generateContent(prompt: string): Promise<string> {
   try {
     if (!process.env.API_KEY) {
       console.error("Gemini API Key not configured");
-      return "Setup Error: Gemini API key not found. See API_SETUP.md for instructions.";
+      throw new Error("Gemini API key not found. See API_SETUP.md for instructions.");
     }
 
+    let lastErr: any = null;
+    
+    for (const modelName of PREFERRED_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const response = await model.generateContent(prompt);
+
+        // SDK responses differ; attempt common accessors
+        let textContent: string | undefined;
+        if (response && typeof (response as any).text === 'function') {
+          textContent = (response as any).text();
+        } else if ((response as any).response && typeof (response as any).response.text === 'function') {
+          textContent = (response as any).response.text();
+        } else if ((response as any).candidates && (response as any).candidates[0]) {
+          textContent = (response as any).candidates[0].content?.parts?.[0]?.text;
+        }
+
+        if (textContent && textContent.trim()) {
+          return textContent;
+        }
+      } catch (err: any) {
+        lastErr = err;
+        // Try next model
+        continue;
+      }
+    }
+
+    // If all attempts failed, throw last error
+    if (lastErr) throw lastErr;
+    throw new Error("All models failed to generate content");
+  } catch (error: any) {
+    console.error("Error generating content:", error);
+    const errorMessage = error?.message || 'Unknown error';
+    
+    if (errorMessage.includes('API_KEY') || errorMessage.includes('api_key') || errorMessage.includes('invalid')) {
+      throw new Error("Setup Error: Check your Gemini API key. See API_SETUP.md for instructions.");
+    }
+    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
+      throw new Error("API Quota Exceeded: Try again later or upgrade your Gemini API quota.");
+    }
+    throw error;
+  }
+}
+
+export async function generateDailyBriefing(userName: string, contextTime: string, weatherSummary?: string): Promise<string> {
+  try {
     const prompt = `
       You are a helpful personal dashboard assistant.
       The current time is ${contextTime}.
@@ -27,49 +85,16 @@ export async function generateDailyBriefing(userName: string, contextTime: strin
       Keep the tone professional yet warm. Limit the total output to around 100-150 words. Do not use H1 or H2 tags, use bolding for emphasis.
     `;
 
-    // Prefer recent Gemini models available to this key. Try several fallbacks.
-    const preferredModels = [
-      'gemma-3-27b',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-    ];
-
-    let lastErr: any = null;
-    for (const m of preferredModels) {
-      try {
-        const model = genAI.getGenerativeModel({ model: m });
-        const response = await model.generateContent(prompt);
-
-        // SDK responses differ; attempt common accessors
-        let textContent: string | undefined;
-        if (response && typeof (response as any).text === 'function') {
-          textContent = (response as any).text();
-        } else if ((response as any).response && typeof (response as any).response.text === 'function') {
-          textContent = (response as any).response.text();
-        } else if ((response as any).candidates && (response as any).candidates[0]) {
-          textContent = (response as any).candidates[0].content?.parts?.[0]?.text;
-        }
-
-        if (textContent && textContent.trim()) return textContent;
-      } catch (err: any) {
-        lastErr = err;
-        // try next model
-        continue;
-      }
-    }
-
-    // If all attempts failed, throw last error to be handled below
-    if (lastErr) throw lastErr;
-    return "Have a wonderful day!";
+    return await generateContent(prompt);
   } catch (error: any) {
     console.error("Error generating briefing:", error);
     const errorMessage = error?.message || 'Unknown error';
-    if (errorMessage.includes('API_KEY') || errorMessage.includes('api_key') || errorMessage.includes('invalid')) {
-      return "Setup Error: Check your Gemini API key. See API_SETUP.md for instructions.";
+    
+    if (errorMessage.includes('Setup Error')) {
+      return errorMessage;
     }
-    if (errorMessage.includes('quota') || errorMessage.includes('429')) {
-      return "API Quota Exceeded: Try again later or upgrade your Gemini API quota.";
+    if (errorMessage.includes('Quota')) {
+      return errorMessage;
     }
     return "Welcome back! I couldn't generate your personalized briefing right now, but I hope you have a productive day.";
   }
