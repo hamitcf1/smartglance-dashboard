@@ -105,25 +105,40 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
       const allEvents: Event[] = [];
 
       for (const calendarId of calendarIds) {
-        const res = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${timeMin}&timeMax=${timeMax}&maxResults=10&orderBy=startTime&singleEvents=true`,
-          {
-            headers: { Authorization: `Bearer ${accessToken}` }
+        try {
+          const res = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${timeMin}&timeMax=${timeMax}&maxResults=10&orderBy=startTime&singleEvents=true`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            }
+          );
+
+          if (!res.ok) {
+            const errorBody = await res.text().catch(() => '');
+            console.error(`Calendar fetch failed for ${calendarId}`, res.status, errorBody);
+            if (res.status === 401 || res.status === 403) {
+              setError('Calendar access expired or permission denied. Please reconnect your account.');
+              onConfigChange({ isConnected: false, accessToken: undefined, calendarIds: [] });
+              setLoading(false);
+              return;
+            }
+            continue;
           }
-        );
+          const data = await res.json();
 
-        if (!res.ok) continue;
-        const data = await res.json();
-
-        if (data.items) {
-          allEvents.push(...data.items.map((event: any) => ({
-            id: event.id,
-            title: event.summary || 'No Title',
-            start: event.start?.dateTime || event.start?.date || '',
-            end: event.end?.dateTime || event.end?.date || '',
-            calendar: event.organizer?.displayName || 'Calendar',
-            color: event.colorId || '#1f2937'
-          })));
+          if (data.items) {
+            allEvents.push(...data.items.map((event: any) => ({
+              id: event.id,
+              title: event.summary || 'No Title',
+              start: event.start?.dateTime || event.start?.date || '',
+              end: event.end?.dateTime || event.end?.date || '',
+              calendar: event.organizer?.displayName || 'Calendar',
+              color: event.colorId || '#1f2937'
+            })));
+          }
+        } catch (err) {
+          console.error(`Error fetching calendar ${calendarId}:`, err);
+          continue;
         }
       }
 

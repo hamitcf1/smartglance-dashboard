@@ -103,33 +103,25 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
   const fetchEmails = useCallback(async (accessToken: string) => {
     setLoading(true);
     try {
-      // Get user profile first
-      const profileRes = await fetch('https://www.googleapis.com/gmail/v1/users/me/profile', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-
-      if (!profileRes.ok) {
-        const body = await profileRes.text().catch(() => '');
-        console.error('Profile fetch failed', profileRes.status, body);
-        if (profileRes.status === 401) {
-          setError('Unauthorized: access token invalid or expired. Please reconnect your Google account.');
-          onConfigChange({ isConnected: false, accessToken: undefined, unreadCount: 0 });
-          setLoading(false);
-          return;
-        }
-        throw new Error(`Failed to fetch profile: ${profileRes.status}`);
-      }
-      const profileData = await profileRes.json();
-
-      // Get recent emails
+      // Get recent emails directly (skip profile fetch - often fails with 403)
       const listRes = await fetch(
-        'https://www.googleapis.com/gmail/v1/users/me/messages?q=is:unread&maxResults=5',
+        'https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=10',
         {
           headers: { Authorization: `Bearer ${accessToken}` }
         }
       );
 
-      if (!listRes.ok) throw new Error('Failed to fetch emails');
+      if (!listRes.ok) {
+        const errorBody = await listRes.text().catch(() => '');
+        console.error('Email list fetch failed', listRes.status, errorBody);
+        if (listRes.status === 401 || listRes.status === 403) {
+          setError('Gmail access expired or permission denied. Please reconnect your account.');
+          onConfigChange({ isConnected: false, accessToken: undefined, unreadCount: 0 });
+          setLoading(false);
+          return;
+        }
+        throw new Error(`Failed to fetch emails: ${listRes.status}`);
+      }
       const listData = await listRes.json();
 
       if (!listData.messages) {
