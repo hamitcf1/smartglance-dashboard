@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, Loader2, LogOut } from 'lucide-react';
+import { Mail, Loader2, LogOut, Inbox, Star, Send } from 'lucide-react';
 import { Widget } from '../Widget';
 import { EmailConfig } from '../../types';
 
@@ -23,6 +23,8 @@ interface Email {
   unread: boolean;
 }
 
+type EmailCategory = 'all' | 'unread' | 'starred' | 'sent';
+
 export const EmailWidget: React.FC<EmailWidgetProps> = ({
   refreshTrigger,
   config,
@@ -36,6 +38,7 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
   const [loading, setLoading] = useState(false);
   const [emails, setEmails] = useState<Email[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState<EmailCategory>('unread');
   const isConnected = config.isConnected || false;
   const tokenClientRef = useRef<any>(null);
 
@@ -100,12 +103,29 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
     }
   };
 
-  const fetchEmails = useCallback(async (accessToken: string) => {
+  const fetchEmails = useCallback(async (accessToken: string, cat: EmailCategory = 'unread') => {
     setLoading(true);
     try {
-      // Get recent emails directly (skip profile fetch - often fails with 403)
+      // Build query based on category
+      let query = '';
+      switch (cat) {
+        case 'unread':
+          query = 'is:unread';
+          break;
+        case 'starred':
+          query = 'is:starred';
+          break;
+        case 'sent':
+          query = 'from:me';
+          break;
+        case 'all':
+        default:
+          query = '';
+      }
+
+      const queryParam = query ? `&q=${encodeURIComponent(query)}` : '';
       const listRes = await fetch(
-        'https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=10',
+        `https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=15${queryParam}`,
         {
           headers: { Authorization: `Bearer ${accessToken}` }
         }
@@ -132,7 +152,7 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
 
       // Fetch full details for each email
       const emailDetails = await Promise.all(
-        listData.messages.slice(0, 5).map(async (msg: any) => {
+        listData.messages.slice(0, 10).map(async (msg: any) => {
           const msgRes = await fetch(
             `https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
             {
@@ -201,18 +221,23 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
     if (!isConnected) {
       initializeGoogleAuth();
     } else if (config.accessToken) {
-      fetchEmails(config.accessToken);
+      fetchEmails(config.accessToken, category);
     }
-  }, [refreshTrigger, isConnected, config.accessToken]);
+  }, [refreshTrigger, isConnected, config.accessToken, category, initializeGoogleAuth, fetchEmails]);
 
   const SettingsPanel = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-xs text-slate-400">Widget Size</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Widget Size</label>
         <select
           value={widgetSize}
           onChange={(e) => onSizeChange(e.target.value)}
-          className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
+          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
         >
           <option value="small">Small</option>
           <option value="medium">Medium</option>
@@ -220,10 +245,33 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
         </select>
       </div>
 
+      <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Default Category</label>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value as EmailCategory)}
+          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
+        >
+          <option value="all">All Emails</option>
+          <option value="unread">Unread</option>
+          <option value="starred">Starred</option>
+          <option value="sent">Sent</option>
+        </select>
+      </div>
+
       {isConnected && (
         <button
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded text-sm transition-colors font-medium"
+          style={{
+            backgroundColor: 'var(--primary)',
+            color: 'white'
+          }}
         >
           <LogOut className="w-4 h-4" />
           Disconnect Gmail
@@ -232,29 +280,40 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
     </div>
   );
 
+  const categoryTabs = [
+    { id: 'unread' as const, label: 'Unread', icon: Inbox },
+    { id: 'all' as const, label: 'All', icon: Mail },
+    { id: 'starred' as const, label: 'Starred', icon: Star },
+    { id: 'sent' as const, label: 'Sent', icon: Send }
+  ];
+
   return (
     <Widget
-      title="Gmail"
-      className="h-full"
+      title="📧 Gmail"
+      className="h-full flex flex-col"
       isSettingsOpen={isSettingsOpen}
       onSettingsToggle={onToggleSettings}
       settingsContent={SettingsPanel}
       dragHandleProps={dragHandleProps}
     >
       {!isConnected ? (
-        <div className="flex flex-col items-center justify-center h-32 space-y-3">
+        <div className="flex flex-col items-center justify-center h-full space-y-3">
           {error ? (
             <>
-              <Mail className="w-8 h-8 text-red-400" />
-              <p className="text-xs text-red-400 text-center px-2">{error}</p>
+              <Mail className="w-8 h-8" style={{ color: 'var(--primary)' }} />
+              <p className="text-xs text-center px-2" style={{ color: 'var(--text-secondary)' }}>{error}</p>
             </>
           ) : (
             <>
-              <Mail className="w-8 h-8 text-slate-400" />
-              <p className="text-xs text-slate-400">Connect your Gmail account</p>
+              <Mail className="w-8 h-8" style={{ color: 'var(--text-secondary)' }} />
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Connect your Gmail account</p>
               <button
                 id="google-signin-button"
-                className="px-4 py-2 bg-white text-gray-800 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 rounded text-sm font-medium transition-all hover:scale-105"
+                style={{
+                  backgroundColor: 'var(--primary)',
+                  color: 'white'
+                }}
                 onClick={() => {
                   if (tokenClientRef.current) {
                     try {
@@ -274,45 +333,80 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
           )}
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'var(--primary)' }} />
         </div>
       ) : error ? (
-        <div className="text-red-400 text-sm h-32 flex items-center">{error}</div>
+        <div className="flex items-center h-full" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-sm">{error}</p>
+        </div>
       ) : (
-        <div className="space-y-3">
-          <div className="mb-2 pb-2 border-b border-white/10">
-            <p className="text-sm font-semibold text-indigo-400">{config.unreadCount || 0} Unread</p>
+        <div className="flex flex-col h-full">
+          {/* Category Tabs */}
+          <div className="flex gap-1 mb-4 pb-3 border-b" style={{ borderColor: 'var(--border)' }}>
+            {categoryTabs.map(tab => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCategory(tab.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
+                  style={{
+                    backgroundColor: category === tab.id ? 'var(--primary)' : 'var(--surface-alt)',
+                    color: category === tab.id ? 'white' : 'var(--text-secondary)',
+                    borderColor: 'var(--border)',
+                    border: '1px solid var(--border)'
+                  }}
+                >
+                  <IconComponent className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          {emails.length > 0 ? (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {emails.map(email => (
-                <a
-                  key={email.id}
-                  href="https://mail.google.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block hover:bg-slate-700/50 p-2 rounded transition-colors cursor-pointer"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-white truncate">{email.from}</p>
-                      <p className="text-xs text-slate-300 line-clamp-1 mt-0.5">{email.subject}</p>
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">{email.snippet}</p>
+          {/* Emails List */}
+          <div className="flex-1 overflow-y-auto">
+            {emails.length > 0 ? (
+              <div className="space-y-2">
+                {emails.map(email => (
+                  <a
+                    key={email.id}
+                    href="https://mail.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-3 rounded-lg border transition-all hover:scale-102"
+                    style={{
+                      backgroundColor: email.unread ? 'var(--surface)' : 'var(--surface-alt)',
+                      borderColor: email.unread ? 'var(--primary)' : 'var(--border)',
+                      border: `1px solid ${email.unread ? 'var(--primary)' : 'var(--border)'}`
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate" style={{ color: 'var(--text)' }}>
+                          {email.from}
+                        </p>
+                        <p className="text-xs line-clamp-1 mt-0.5" style={{ color: 'var(--text)' }}>
+                          {email.subject}
+                        </p>
+                        <p className="text-xs line-clamp-2 mt-1" style={{ color: 'var(--text-secondary)' }}>
+                          {email.snippet}
+                        </p>
+                      </div>
+                      {email.unread && (
+                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" style={{ backgroundColor: 'var(--primary)' }}></div>
+                      )}
                     </div>
-                    {email.unread && (
-                      <div className="w-2 h-2 bg-indigo-400 rounded-full flex-shrink-0 mt-1"></div>
-                    )}
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 text-slate-400">
-              <p className="text-xs">No unread emails</p>
-            </div>
-          )}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-24" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-xs">No emails in this category</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Widget>
