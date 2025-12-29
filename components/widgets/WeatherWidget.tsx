@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Cloud, CloudRain, Sun, Wind, Loader2, Thermometer, MapPin, Search } from 'lucide-react';
+import { Cloud, CloudRain, Sun, Wind, Loader2, MapPin, Search, Eye } from 'lucide-react';
 import { Widget } from '../Widget';
 import { WeatherData, WeatherConfig } from '../../types';
 
@@ -56,7 +56,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     }
   }, []);
 
-  // Search for city coordinates
   const handleCitySearch = async () => {
     if (!citySearch.trim()) return;
     setSearchingCity(true);
@@ -72,7 +71,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           useAutoLocation: false
         });
         setCitySearch('');
-        onToggleSettings(); // Close settings on success
+        onToggleSettings();
       } else {
         alert('City not found');
       }
@@ -85,14 +84,14 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   };
 
   useEffect(() => {
-    if (config.useAutoLocation !== false) { // Default to true if undefined
+    if (config.useAutoLocation !== false) {
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             fetchWeather(position.coords.latitude, position.coords.longitude);
           },
           () => {
-            fetchWeather(37.7749, -122.4194); // Default SF
+            fetchWeather(37.7749, -122.4194);
           }
         );
       } else {
@@ -101,24 +100,23 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     } else if (config.lat && config.lon) {
       fetchWeather(config.lat, config.lon);
     } else {
-      // Fallback
       fetchWeather(37.7749, -122.4194);
     }
   }, [fetchWeather, refreshTrigger, config.useAutoLocation, config.lat, config.lon]);
 
   const getWeatherIcon = (code: number, isDay: number) => {
-    if (code === 0 || code === 1) return isDay ? <Sun className="w-10 h-10 text-yellow-400" /> : <Sun className="w-10 h-10 text-slate-300" />;
-    if (code > 1 && code < 48) return <Cloud className="w-10 h-10 text-slate-400" />;
-    if (code >= 51) return <CloudRain className="w-10 h-10 text-blue-400" />;
-    return <Sun className="w-10 h-10 text-yellow-400" />;
+    if (code === 0 || code === 1) return isDay ? <Sun className="w-16 h-16" style={{ color: 'var(--primary)' }} /> : <Sun className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />;
+    if (code > 1 && code < 48) return <Cloud className="w-16 h-16" style={{ color: 'var(--text-secondary)' }} />;
+    if (code >= 51) return <CloudRain className="w-16 h-16" style={{ color: 'var(--primary)' }} />;
+    return <Sun className="w-16 h-16" style={{ color: 'var(--primary)' }} />;
   };
 
   const getConditionText = (code: number) => {
-    if (code === 0) return 'Clear Sky';
-    if (code === 1 || code === 2 || code === 3) return 'Partly Cloudy';
+    if (code === 0) return 'Clear';
+    if (code === 1 || code === 2 || code === 3) return 'Cloudy';
     if (code >= 51 && code <= 67) return 'Rainy';
-    if (code >= 71) return 'Snow';
-    if (code >= 95) return 'Thunderstorm';
+    if (code >= 71) return 'Snowy';
+    if (code >= 95) return 'Storm';
     return 'Cloudy';
   };
 
@@ -129,11 +127,16 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   const SettingsPanel = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-xs text-slate-400">Widget Size</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Widget Size</label>
         <select 
           value={widgetSize} 
           onChange={(e) => onSizeChange(e.target.value)}
-          className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
+          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
         >
           <option value="small">Small</option>
           <option value="medium">Medium</option>
@@ -141,38 +144,53 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         </select>
       </div>
 
-      <div className="space-y-3 pt-2 border-t border-white/10">
-        <label className="text-xs text-slate-400">Location</label>
+      <div className="space-y-3 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Location</label>
         
         <button 
           onClick={() => onConfigChange({ useAutoLocation: true })}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors ${config.useAutoLocation !== false ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border"
+          style={{
+            backgroundColor: config.useAutoLocation !== false ? 'var(--primary)' : 'var(--surface-alt)',
+            borderColor: config.useAutoLocation !== false ? 'var(--primary)' : 'var(--border)',
+            color: config.useAutoLocation !== false ? 'white' : 'var(--text-secondary)'
+          }}
         >
-          <MapPin className="w-4 h-4" /> Use Current Location
+          <MapPin className="w-3.5 h-3.5" /> Auto Location
         </button>
 
         <div className="relative">
           <input 
             type="text" 
-            placeholder="Search City..." 
-            className="w-full bg-slate-800 border border-white/10 rounded px-3 py-2 pl-9 text-sm text-white focus:outline-none focus:border-indigo-500"
+            placeholder="Search city..." 
+            className="w-full border rounded-lg px-3 py-2 pl-8 text-xs focus:outline-none focus:ring-2 transition-colors"
+            style={{
+              backgroundColor: 'var(--surface-alt)',
+              borderColor: 'var(--border)',
+              color: 'var(--text)'
+            }}
             value={citySearch}
             onChange={e => setCitySearch(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleCitySearch()}
           />
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5" style={{ color: 'var(--text-secondary)' }} />
           <button 
             onClick={handleCitySearch}
             disabled={!citySearch || searchingCity}
-            className="absolute right-2 top-2 p-0.5 text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+            className="absolute right-1 top-1 px-2 py-1 rounded text-xs font-medium transition-all"
+            style={{
+              backgroundColor: 'var(--primary)',
+              color: 'white',
+              opacity: !citySearch || searchingCity ? 0.5 : 1
+            }}
           >
-            {searchingCity ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Go'}
+            {searchingCity ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Search'}
           </button>
         </div>
         
         {!config.useAutoLocation && config.city && (
-          <div className="text-xs text-center text-indigo-300">
-            Selected: {config.city}
+          <div className="text-xs text-center rounded-lg p-2" style={{ backgroundColor: 'var(--surface)', color: 'var(--primary)' }}>
+            {config.city}
           </div>
         )}
       </div>
@@ -181,42 +199,86 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
 
   return (
     <Widget 
-      title="Current Weather" 
-      className="h-full"
+      title="🌤️ Weather" 
+      className="h-full flex flex-col justify-between"
       isSettingsOpen={isSettingsOpen}
       onSettingsToggle={onToggleSettings}
       settingsContent={SettingsPanel}
       dragHandleProps={dragHandleProps}
     >
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--primary)' }} />
         </div>
       ) : error ? (
-        <div className="text-red-400 text-sm h-32 flex items-center">{error}</div>
+        <div className="flex items-center justify-center h-full">
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{error}</p>
+        </div>
       ) : weather ? (
-        <div className="flex flex-col h-full justify-between">
-          <div className="flex items-center justify-between mt-2">
-             <div className="flex flex-col">
-                {config.city && <span className="text-sm text-slate-300 mb-2 flex items-center gap-1"><MapPin className="w-4 h-4" />{config.city}</span>}
-                <span className="text-4xl font-bold text-white flex items-start">
-                   {displayTemp}
-                   <span className="text-lg text-slate-400 font-normal mt-1 ml-1">°{useCelsius ? 'C' : 'F'}</span>
+        <div className="flex flex-col h-full justify-between space-y-4">
+          {/* Main Weather Display */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              {config.city && (
+                <div className="flex items-center gap-1 mb-2">
+                  <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
+                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    {config.city}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-bold" style={{ color: 'var(--text)' }}>
+                  {displayTemp}°
                 </span>
-                <span className="text-slate-400 mt-1">{getConditionText(weather.weatherCode)}</span>
-             </div>
-             {getWeatherIcon(weather.weatherCode, weather.isDay)}
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  {useCelsius ? 'C' : 'F'}
+                </span>
+              </div>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-secondary)' }}>
+                {getConditionText(weather.weatherCode)}
+              </p>
+            </div>
+
+            {/* Weather Icon */}
+            <div className="flex-shrink-0 mt-1">
+              {getWeatherIcon(weather.weatherCode, weather.isDay)}
+            </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-white/10">
-             <div className="flex items-center gap-2 text-sm text-slate-300">
-                <Wind className="w-4 h-4" />
-                <span>{weather.windSpeed} km/h</span>
-             </div>
-             <div className="flex items-center gap-2 text-sm text-slate-300">
-                <Thermometer className="w-4 h-4" />
-                <span>Feels {displayTemp}°</span>
-             </div>
+
+          {/* Weather Details Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <div 
+              className="p-3 rounded-lg border flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <Wind className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--primary)' }} />
+              <div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Wind</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                  {weather.windSpeed} km/h
+                </div>
+              </div>
+            </div>
+
+            <div 
+              className="p-3 rounded-lg border flex items-center gap-2"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <Eye className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--primary)' }} />
+              <div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Feels</div>
+                <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                  {displayTemp}°
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

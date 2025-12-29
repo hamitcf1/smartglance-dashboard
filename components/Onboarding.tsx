@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, X, MapPin, Clock, Heart, Youtube, Check } from 'lucide-react';
 import { UserSettings, WidgetInstance, QuickLink, YouTubeConfig } from '../types';
 
@@ -60,6 +60,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [youtubeSearchQuery, setYoutubeSearchQuery] = useState('');
   const [youtubeSearchResults, setYoutubeSearchResults] = useState<Array<{ id: string; name: string; thumbnail?: string }>>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Apply theme when it changes
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const toggleWidget = (type: string) => {
     setSelectedWidgets(prev =>
@@ -208,14 +213,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundColor: 'var(--bg)'
+      }}
+    >
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Welcome to <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">SmartGlance</span>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+            Welcome to <span style={{ color: 'var(--primary)' }}>SmartGlance</span>
           </h1>
-          <p className="text-slate-400">Personalize your dashboard in {5 - (step - 1)} step{5 - (step - 1) === 1 ? '' : 's'}</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Personalize your dashboard in {5 - (step - 1)} step{5 - (step - 1) === 1 ? '' : 's'}</p>
         </div>
 
         {/* Progress Bar */}
@@ -224,22 +234,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             {[1, 2, 3, 4, 5].map(s => (
               <div
                 key={s}
-                className={`h-1 flex-1 rounded-full transition-colors ${
-                  s <= step ? 'bg-indigo-500' : 'bg-slate-700'
-                }`}
+                className="h-1 flex-1 rounded-full transition-colors"
+                style={{
+                  backgroundColor: s <= step ? 'var(--primary)' : 'var(--border)'
+                }}
               />
             ))}
           </div>
         </div>
 
         {/* Content */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-8 min-h-96">
+        <div 
+          className="backdrop-blur-md border rounded-2xl p-8 mb-8 min-h-96"
+          style={{
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--border)'
+          }}
+        >
           {/* Step 1: Name & Username */}
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">What's your name?</h2>
-                <p className="text-slate-400">Let's personalize your SmartGlance experience</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>What's your name?</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Let's personalize your SmartGlance experience</p>
               </div>
 
               <input
@@ -247,13 +264,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 placeholder="Enter your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 transition-colors"
+                style={{
+                  backgroundColor: 'var(--surface-alt)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--border)',
+                  focusRingColor: 'var(--primary)'
+                }}
                 autoFocus
               />
 
-              <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/50">
-                <p className="text-sm text-slate-300">
-                  💡 <strong>Tip:</strong> You can change your name in settings anytime
+              <div 
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: 'var(--surface-alt)',
+                  borderColor: 'var(--border)'
+                }}
+              >
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  💡 <strong style={{ color: 'var(--text)' }}>Tip:</strong> You can change your name in settings anytime
                 </p>
               </div>
             </div>
@@ -263,8 +293,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step === 2 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Choose a theme</h2>
-                <p className="text-slate-400">Select your preferred color scheme</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>Choose a theme</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Select your preferred color scheme</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -281,14 +311,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     <button
                       key={t}
                       onClick={() => setTheme(t)}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        theme === t
-                          ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/50'
-                          : 'bg-slate-700/30 border-slate-600 hover:border-slate-500'
-                      }`}
+                      className="p-4 rounded-lg border-2 transition-all text-left"
+                      style={{
+                        backgroundColor: theme === t ? 'var(--primary)' : 'var(--surface-alt)',
+                        borderColor: theme === t ? 'var(--primary)' : 'var(--border)',
+                        color: theme === t ? 'white' : 'var(--text)',
+                        opacity: 1,
+                        boxShadow: theme === t ? `0 0 12px var(--primary)` : 'none'
+                      }}
                     >
-                      <h3 className="font-semibold text-white">{themeNames[t]}</h3>
-                      {theme === t && <Check className="w-5 h-5 text-indigo-400 mt-2" />}
+                      <h3 className="font-semibold" style={{ color: theme === t ? 'white' : 'var(--text)' }}>{themeNames[t]}</h3>
+                      {theme === t && <Check className="w-5 h-5 mt-2" style={{ color: 'white' }} />}
                     </button>
                   );
                 })}
@@ -300,8 +333,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Choose your widgets</h2>
-                <p className="text-slate-400">Select the ones you'd like to see on your dashboard</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>Choose your widgets</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Select the ones you'd like to see on your dashboard</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
@@ -309,19 +342,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   <button
                     key={widget.type}
                     onClick={() => toggleWidget(widget.type)}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      selectedWidgets.includes(widget.type)
-                        ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/50'
-                        : 'bg-slate-700/30 border-slate-600 hover:border-slate-500'
-                    }`}
+                    className="p-4 rounded-lg border-2 transition-all text-left"
+                    style={{
+                      backgroundColor: selectedWidgets.includes(widget.type) ? 'var(--primary)' : 'var(--surface-alt)',
+                      borderColor: selectedWidgets.includes(widget.type) ? 'var(--primary)' : 'var(--border)',
+                      color: selectedWidgets.includes(widget.type) ? 'white' : 'var(--text)',
+                      boxShadow: selectedWidgets.includes(widget.type) ? `0 0 12px var(--primary)` : 'none'
+                    }}
                   >
                     <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-semibold text-white">{widget.label}</h3>
+                      <h3 className="font-semibold" style={{ color: selectedWidgets.includes(widget.type) ? 'white' : 'var(--text)' }}>{widget.label}</h3>
                       {selectedWidgets.includes(widget.type) && (
-                        <Check className="w-5 h-5 text-indigo-400" />
+                        <Check className="w-5 h-5" style={{ color: 'white' }} />
                       )}
                     </div>
-                    <p className="text-xs text-slate-400">{widget.description}</p>
+                    <p className="text-xs" style={{ color: selectedWidgets.includes(widget.type) ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)' }}>{widget.description}</p>
                   </button>
                 ))}
               </div>
@@ -332,20 +367,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Location & Time</h2>
-                <p className="text-slate-400">Configure your timezone and temperature units</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>Location & Time</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Configure your timezone and temperature units</p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
                     <Clock className="w-4 h-4 inline mr-2" />
                     Select Your Timezone
                   </label>
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 transition-colors"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   >
                     {COMMON_TIMEZONES.map(tz => (
                       <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -354,27 +395,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
+                  <label className="block text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
                     Temperature Unit
                   </label>
                   <div className="flex gap-4">
                     <button
                       onClick={() => setUseCelsius(true)}
-                      className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all font-medium ${
-                        useCelsius
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                          : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:border-slate-500'
-                      }`}
+                      className="flex-1 px-4 py-3 rounded-lg border-2 transition-all font-medium"
+                      style={{
+                        backgroundColor: useCelsius ? 'var(--primary)' : 'var(--surface-alt)',
+                        borderColor: useCelsius ? 'var(--primary)' : 'var(--border)',
+                        color: useCelsius ? 'white' : 'var(--text)'
+                      }}
                     >
                       °C Celsius
                     </button>
                     <button
                       onClick={() => setUseCelsius(false)}
-                      className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all font-medium ${
-                        !useCelsius
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                          : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:border-slate-500'
-                      }`}
+                      className="flex-1 px-4 py-3 rounded-lg border-2 transition-all font-medium"
+                      style={{
+                        backgroundColor: !useCelsius ? 'var(--primary)' : 'var(--surface-alt)',
+                        borderColor: !useCelsius ? 'var(--primary)' : 'var(--border)',
+                        color: !useCelsius ? 'white' : 'var(--text)'
+                      }}
                     >
                       °F Fahrenheit
                     </button>
@@ -388,8 +431,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step === 5 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Quick Links</h2>
-                <p className="text-slate-400">Add shortcuts to your favorite websites</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>Quick Links</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Add shortcuts to your favorite websites</p>
               </div>
 
               <div className="space-y-3">
@@ -399,7 +442,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     placeholder="Link name (e.g., Google)"
                     value={newLinkName}
                     onChange={(e) => setNewLinkName(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   />
                 </div>
                 <div className="flex gap-2">
@@ -408,11 +457,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     placeholder="URL (e.g., https://google.com)"
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   />
                   <button
                     onClick={addQuickLink}
-                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                    className="px-6 py-2 rounded-lg font-medium transition-colors"
+                    style={{
+                      backgroundColor: 'var(--primary)',
+                      color: 'white'
+                    }}
                   >
                     Add
                   </button>
@@ -421,14 +480,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
               <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                 {quickLinks.map(link => (
-                  <div key={link.id} className="flex items-center justify-between bg-slate-700/30 p-3 rounded-lg border border-slate-600">
+                  <div 
+                    key={link.id} 
+                    className="flex items-center justify-between p-3 rounded-lg border"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{link.name}</p>
-                      <p className="text-xs text-slate-400 truncate">{link.url}</p>
+                      <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{link.name}</p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{link.url}</p>
                     </div>
                     <button
                       onClick={() => removeQuickLink(link.id)}
-                      className="ml-2 p-2 hover:bg-red-600/20 rounded-lg transition-colors"
+                      className="ml-2 p-2 rounded-lg transition-colors hover:bg-red-600/20"
                     >
                       <X className="w-4 h-4 text-red-400" />
                     </button>
@@ -442,18 +508,25 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step === 6 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">YouTube Channels</h2>
-                <p className="text-slate-400">Add your favorite YouTube channels (optional)</p>
+                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>YouTube Channels</h2>
+                <p style={{ color: 'var(--text-secondary)' }}>Add your favorite YouTube channels (optional)</p>
               </div>
 
-              <div className="bg-slate-700/30 border border-slate-600 rounded-lg p-3 text-sm text-slate-300">
-                <p>💡 <strong>Tip:</strong> You can either search by channel name or paste a YouTube channel URL</p>
+              <div 
+                className="border rounded-lg p-3 text-sm"
+                style={{
+                  backgroundColor: 'var(--surface-alt)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                <p>💡 <strong style={{ color: 'var(--text)' }}>Tip:</strong> You can either search by channel name or paste a YouTube channel URL</p>
               </div>
 
               <div className="space-y-3">
                 {/* Search by Channel Name */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-2">Search by Channel Name</label>
+                  <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text)' }}>Search by Channel Name</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -467,12 +540,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                           setYoutubeSearchResults([]);
                         }
                       }}
-                      className="flex-1 px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="flex-1 px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                      style={{
+                        backgroundColor: 'var(--surface-alt)',
+                        borderColor: 'var(--border)',
+                        color: 'var(--text)',
+                        border: '1px solid var(--border)'
+                      }}
                     />
                     <button
                       onClick={() => searchYoutubeChannels(youtubeSearchQuery)}
                       disabled={!youtubeSearchQuery.trim() || isSearching}
-                      className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                      className="px-4 py-2 rounded-lg font-medium transition-colors"
+                      style={{
+                        backgroundColor: 'var(--surface-alt)',
+                        color: 'var(--text)',
+                        opacity: !youtubeSearchQuery.trim() || isSearching ? 0.5 : 1
+                      }}
                     >
                       {isSearching ? '🔍' : 'Search'}
                     </button>
@@ -484,10 +568,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button
                           key={result.id}
                           onClick={() => handleYoutubeSearchResult(result.id, result.name)}
-                          className="w-full p-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-left transition-colors"
+                          className="w-full p-3 rounded-lg text-left transition-colors border"
+                          style={{
+                            backgroundColor: 'var(--surface-alt)',
+                            borderColor: 'var(--primary)',
+                            color: 'var(--text)'
+                          }}
                         >
-                          <p className="font-medium text-white text-sm">{result.name}</p>
-                          <p className="text-xs text-slate-400">{result.id}</p>
+                          <p className="font-medium text-sm">{result.name}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{result.id}</p>
                         </button>
                       ))}
                     </div>
@@ -496,7 +585,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* Or Paste Channel URL */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-2">Or Paste Channel URL</label>
+                  <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text)' }}>Or Paste Channel URL</label>
                   <input
                     type="text"
                     placeholder="e.g., youtube.com/@channelname or youtube.com/channel/UCxxx"
@@ -516,7 +605,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         setNewChannelId(extractedId);
                       }
                     }}
-                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   />
                 </div>
 
@@ -527,21 +622,38 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     placeholder="Channel name"
                     value={newChannelName}
                     onChange={(e) => setNewChannelName(e.target.value)}
-                    className="px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Channel ID (UCxxxxxx...)"
                     value={newChannelId}
                     onChange={(e) => setNewChannelId(e.target.value)}
-                    className="px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text)',
+                      border: '1px solid var(--border)'
+                    }}
                   />
                 </div>
 
                 <button
                   onClick={addYoutubeChannel}
                   disabled={!newChannelName.trim() || !newChannelId.trim()}
-                  className="w-full px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  className="w-full px-6 py-2 rounded-lg font-medium transition-colors"
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    color: 'white',
+                    opacity: !newChannelName.trim() || !newChannelId.trim() ? 0.5 : 1
+                  }}
                 >
                   Add Channel
                 </button>
@@ -549,14 +661,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
               <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
                 {youtubeChannels.map(channel => (
-                  <div key={channel.id} className="flex items-center justify-between bg-slate-700/30 p-3 rounded-lg border border-slate-600">
+                  <div 
+                    key={channel.id} 
+                    className="flex items-center justify-between p-3 rounded-lg border"
+                    style={{
+                      backgroundColor: 'var(--surface-alt)',
+                      borderColor: 'var(--border)'
+                    }}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white">{channel.name}</p>
-                      <p className="text-xs text-slate-400">{channel.id}</p>
+                      <p className="font-medium" style={{ color: 'var(--text)' }}>{channel.name}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{channel.id}</p>
                     </div>
                     <button
                       onClick={() => removeYoutubeChannel(channel.id)}
-                      className="ml-2 p-2 hover:bg-red-600/20 rounded-lg transition-colors"
+                      className="ml-2 p-2 rounded-lg transition-colors hover:bg-red-600/20"
                     >
                       <X className="w-4 h-4 text-red-400" />
                     </button>
@@ -574,11 +693,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               if (step > 1) setStep(step - 1);
             }}
             disabled={step === 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-              step === 1
-                ? 'text-slate-600 cursor-not-allowed'
-                : 'text-white hover:bg-slate-700/50 border border-slate-600'
-            }`}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors border"
+            style={{
+              color: step === 1 ? 'var(--text-secondary)' : 'var(--text)',
+              borderColor: step === 1 ? 'var(--border)' : 'var(--border)',
+              opacity: step === 1 ? 0.5 : 1,
+              cursor: step === 1 ? 'not-allowed' : 'pointer'
+            }}
           >
             <ChevronLeft className="w-5 h-5" />
             Back
@@ -586,7 +707,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
           <button
             onClick={handleSkip}
-            className="px-6 py-3 text-slate-400 hover:text-white transition-colors font-medium"
+            className="px-6 py-3 transition-colors font-medium"
+            style={{
+              color: 'var(--text-secondary)'
+            }}
           >
             Skip Setup
           </button>
@@ -594,7 +718,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           {step < 5 ? (
             <button
               onClick={() => setStep(step + 1)}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'white'
+              }}
             >
               Next
               <ChevronRight className="w-5 h-5" />
@@ -602,7 +730,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           ) : (
             <button
               onClick={handleComplete}
-              className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'white'
+              }}
             >
               Complete
               <Check className="w-5 h-5" />
