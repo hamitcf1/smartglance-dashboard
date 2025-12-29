@@ -223,7 +223,7 @@ export const EmailWidget: React.FC<EmailWidgetProps> = ({
     } else if (config.accessToken) {
       fetchEmails(config.accessToken, category);
     }
-  }, [refreshTrigger, isConnected, config.accessToken, category, initializeGoogleAuth, fetchEmails]);
+  }, [refreshTrigger, isConnected, config.accessToken, category]);
 
   const SettingsPanel = (
     <div className="space-y-4">
