@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Zap } from 'lucide-react';
 import { Widget } from '../Widget';
 
 interface ClockWidgetProps {
@@ -33,7 +33,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
   }, [config]);
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
+    const timer = setInterval(() => setTime(new Date()), 500);
     return () => clearInterval(timer);
   }, []);
 
@@ -44,7 +44,20 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
         minute: '2-digit',
         second: '2-digit',
         timeZone: timezone,
-        hour12: true
+        hour12: false
+      });
+    } catch {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
+  const formatTimeShort = (date: Date, timezone?: string) => {
+    try {
+      return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: timezone,
+        hour12: false
       });
     } catch {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -52,7 +65,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   const getTimeInTimezone = (timezone: string) => {
@@ -64,7 +77,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
   };
 
   const COMMON_TIMEZONES = [
-    { label: 'System', value: '' },
+    { label: 'Local', value: '' },
     { label: 'UTC', value: 'UTC' },
     { label: 'New York', value: 'America/New_York' },
     { label: 'London', value: 'Europe/London' },
@@ -78,45 +91,120 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
 
   const activeTimezones = config.timezones.length > 0 ? config.timezones : [''];
 
-  const AnalogClock = ({ tzTime, size = 'base' }: { tzTime: Date; size?: string }) => {
+  // Modern Analog Clock with smooth animations
+  const ModernAnalogClock = ({ tzTime, size = 'medium' }: { tzTime: Date; size?: string }) => {
     const hours = tzTime.getHours() % 12;
     const minutes = tzTime.getMinutes();
     const seconds = tzTime.getSeconds();
+    const milliseconds = tzTime.getMilliseconds();
 
+    // Smooth transitions using milliseconds
     const hourDegrees = (hours * 30) + (minutes * 0.5);
-    const minuteDegrees = (minutes * 6) + (seconds * 0.1);
-    const secondDegrees = seconds * 6;
+    const minuteDegrees = (minutes * 6) + (seconds * 0.1) + (milliseconds * 0.0001);
+    const secondDegrees = (seconds * 6) + (milliseconds * 0.006);
+
+    const clockSizes = {
+      small: 'w-32 h-32',
+      medium: 'w-40 h-40',
+      large: 'w-52 h-52'
+    };
 
     return (
-      <div className="flex flex-col items-center gap-2">
-        <div className="relative w-20 h-20 rounded-full border-4 border-indigo-500/50 bg-slate-700/50">
-          {/* Hour marks */}
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-0.5 h-2 bg-slate-400 left-1/2 top-1 -translate-x-1/2 origin-bottom"
-              style={{ transform: `translateX(-50%) rotate(${i * 30}deg)` }}
-            />
-          ))}
-          {/* Hour hand */}
-          <div
-            className="absolute w-1 h-6 bg-white left-1/2 bottom-1/2 -translate-x-1/2 origin-bottom rounded-full"
-            style={{ transform: `translateX(-50%) rotate(${hourDegrees}deg)` }}
-          />
-          {/* Minute hand */}
-          <div
-            className="absolute w-0.5 h-8 bg-slate-300 left-1/2 bottom-1/2 -translate-x-1/2 origin-bottom rounded-full"
-            style={{ transform: `translateX(-50%) rotate(${minuteDegrees}deg)` }}
-          />
-          {/* Second hand */}
-          <div
-            className="absolute w-0.5 h-7 bg-red-400 left-1/2 bottom-1/2 -translate-x-1/2 origin-bottom rounded-full"
-            style={{ transform: `translateX(-50%) rotate(${secondDegrees}deg)` }}
-          />
-          {/* Center dot */}
-          <div className="absolute w-2 h-2 bg-white rounded-full left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <div className="flex items-center justify-center">
+        <div className={`${clockSizes[size as keyof typeof clockSizes]} relative`}>
+          {/* Outer ring with gradient */}
+          <div 
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'conic-gradient(var(--primary), var(--text-secondary), var(--primary))',
+              padding: '3px'
+            }}
+          >
+            <div 
+              className="w-full h-full rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--surface)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              {/* Hour markers */}
+              {[...Array(12)].map((_, i) => {
+                const angle = (i * 30) * (Math.PI / 180);
+                const isMainMarker = i % 3 === 0;
+                const radius = size === 'large' ? 95 : size === 'medium' ? 75 : 60;
+                const x = Math.sin(angle) * radius;
+                const y = -Math.cos(angle) * radius;
+                const size_px = isMainMarker ? 8 : 4;
+                
+                return (
+                  <div
+                    key={i}
+                    className="absolute rounded-full transition-all"
+                    style={{
+                      width: `${size_px}px`,
+                      height: `${size_px}px`,
+                      backgroundColor: isMainMarker ? 'var(--primary)' : 'var(--text-secondary)',
+                      left: `50%`,
+                      top: `50%`,
+                      transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                      opacity: isMainMarker ? 1 : 0.6
+                    }}
+                  />
+                );
+              })}
+
+              {/* Hour hand */}
+              <div
+                className="absolute origin-bottom left-1/2 rounded-full transition-transform"
+                style={{
+                  width: '6px',
+                  height: size === 'large' ? '35%' : size === 'medium' ? '28%' : '22%',
+                  backgroundColor: 'var(--primary)',
+                  bottom: '50%',
+                  transform: `translateX(-50%) rotate(${hourDegrees}deg)`,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)'
+                }}
+              />
+
+              {/* Minute hand */}
+              <div
+                className="absolute origin-bottom left-1/2 rounded-full transition-transform"
+                style={{
+                  width: '4px',
+                  height: size === 'large' ? '45%' : size === 'medium' ? '36%' : '28%',
+                  backgroundColor: 'var(--text)',
+                  bottom: '50%',
+                  transform: `translateX(-50%) rotate(${minuteDegrees}deg)`,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                }}
+              />
+
+              {/* Second hand */}
+              <div
+                className="absolute origin-bottom left-1/2 transition-transform"
+                style={{
+                  width: '2px',
+                  height: size === 'large' ? '50%' : size === 'medium' ? '40%' : '32%',
+                  backgroundColor: 'var(--primary)',
+                  opacity: 0.7,
+                  bottom: '50%',
+                  transform: `translateX(-50%) rotate(${secondDegrees}deg)`,
+                }}
+              />
+
+              {/* Center dot */}
+              <div 
+                className="absolute rounded-full"
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  backgroundColor: 'var(--primary)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)'
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-slate-400 mt-1">{formatTime(tzTime)}</p>
       </div>
     );
   };
@@ -124,25 +212,27 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
   const SettingsPanel = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-xs text-slate-400 font-semibold">Display Mode</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Display Mode</label>
         <div className="flex gap-2">
           <button
             onClick={() => setConfig(c => ({ ...c, viewMode: 'digital' }))}
-            className={`flex-1 px-3 py-2 rounded text-xs font-medium transition-colors ${
-              config.viewMode === 'digital'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
+            className="flex-1 px-3 py-2 rounded text-xs font-medium transition-all border"
+            style={{
+              backgroundColor: config.viewMode === 'digital' ? 'var(--primary)' : 'var(--surface-alt)',
+              color: config.viewMode === 'digital' ? 'white' : 'var(--text)',
+              borderColor: config.viewMode === 'digital' ? 'var(--primary)' : 'var(--border)'
+            }}
           >
             Digital
           </button>
           <button
             onClick={() => setConfig(c => ({ ...c, viewMode: 'analog' }))}
-            className={`flex-1 px-3 py-2 rounded text-xs font-medium transition-colors ${
-              config.viewMode === 'analog'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
+            className="flex-1 px-3 py-2 rounded text-xs font-medium transition-all border"
+            style={{
+              backgroundColor: config.viewMode === 'analog' ? 'var(--primary)' : 'var(--surface-alt)',
+              color: config.viewMode === 'analog' ? 'white' : 'var(--text)',
+              borderColor: config.viewMode === 'analog' ? 'var(--primary)' : 'var(--border)'
+            }}
           >
             Analog
           </button>
@@ -150,10 +240,17 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs text-slate-400 font-semibold">Timezones</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Timezones</label>
         <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
           {COMMON_TIMEZONES.map(tz => (
-            <label key={tz.value} className="flex items-center gap-2 p-2 rounded hover:bg-slate-700/50 cursor-pointer transition-colors">
+            <label 
+              key={tz.value} 
+              className="flex items-center gap-2 p-2 rounded cursor-pointer transition-colors"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                color: 'var(--text-secondary)'
+              }}
+            >
               <input
                 type="checkbox"
                 checked={config.timezones.includes(tz.value)}
@@ -170,20 +267,25 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
                     }));
                   }
                 }}
-                className="w-3 h-3 rounded border-slate-500 text-indigo-500 focus:ring-0 cursor-pointer"
+                className="w-3 h-3 rounded cursor-pointer"
               />
-              <span className="text-xs text-slate-300">{tz.label}</span>
+              <span className="text-xs">{tz.label}</span>
             </label>
           ))}
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs text-slate-400 font-semibold">Widget Size</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Widget Size</label>
         <select 
           value={widgetSize} 
           onChange={(e) => onSizeChange?.(e.target.value)}
-          className="w-full bg-slate-700 border border-white/10 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
         >
           <option value="small">Small</option>
           <option value="medium">Medium</option>
@@ -195,50 +297,106 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
 
   return (
     <Widget 
-      className="relative overflow-hidden group h-full flex flex-col"
+      className="relative overflow-hidden h-full flex flex-col"
       isSettingsOpen={isSettingsOpen}
       onSettingsToggle={onToggleSettings}
       settingsContent={SettingsPanel}
       dragHandleProps={dragHandleProps}
     >
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition-all pointer-events-none"></div>
-      
-      {/* Main Clock Display */}
-      <div className="flex-1 flex flex-col justify-center z-10 relative">
-        {config.viewMode === 'digital' ? (
-          <>
-            <h2 className="text-6xl md:text-7xl font-bold tracking-tighter text-white">
-              {formatTime(time)}
-            </h2>
-            <p className="text-xl text-slate-400 mt-2 font-light">
-              {formatDate(time)}
-            </p>
-          </>
-        ) : (
-          <AnalogClock tzTime={time} />
-        )}
+      <div className="flex-1 flex flex-col justify-center items-center py-4 relative">
+        {/* Animated background gradient */}
+        <div 
+          className="absolute inset-0 opacity-20 blur-3xl"
+          style={{
+            background: 'radial-gradient(circle, var(--primary), transparent)',
+            animation: 'pulse 4s ease-in-out infinite'
+          }}
+        />
+
+        {/* Main Display */}
+        <div className="z-10 flex flex-col items-center justify-center w-full h-full">
+          {config.viewMode === 'digital' ? (
+            // Digital Clock Display
+            <div className="flex flex-col items-center gap-3 px-4">
+              <div className="text-center">
+                <div 
+                  className="text-7xl sm:text-8xl font-bold font-mono tracking-tighter tabular-nums"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {time.getHours().toString().padStart(2, '0')}
+                  <span className="animate-pulse">:</span>
+                  {time.getMinutes().toString().padStart(2, '0')}
+                </div>
+                <div 
+                  className="text-sm font-mono mt-2 opacity-75"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {time.getSeconds().toString().padStart(2, '0')} sec
+                </div>
+              </div>
+              <div 
+                className="text-lg font-light tracking-wide"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {formatDate(time)}
+              </div>
+            </div>
+          ) : (
+            // Analog Clock Display
+            <div className="flex flex-col items-center gap-4">
+              <ModernAnalogClock tzTime={time} size={widgetSize || 'medium'} />
+              <div 
+                className="text-xs font-mono font-light tracking-widest"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {time.getHours().toString().padStart(2, '0')}:{time.getMinutes().toString().padStart(2, '0')}:{time.getSeconds().toString().padStart(2, '0')}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Timezone List */}
       {activeTimezones.length > 0 && (
-        <div className="border-t border-white/10 p-4 pt-3 z-10 space-y-2 max-h-24 overflow-y-auto custom-scrollbar">
+        <div 
+          className="border-t p-3 z-10 space-y-2 max-h-32 overflow-y-auto custom-scrollbar"
+          style={{ borderColor: 'var(--border)' }}
+        >
           {activeTimezones.map((tz) => {
             const tzTime = tz ? getTimeInTimezone(tz) : time;
             const tzLabel = COMMON_TIMEZONES.find(t => t.value === tz)?.label || tz || 'Local';
             return (
-              <div key={tz || 'local'} className="flex items-center justify-between gap-3 px-2 py-1 rounded bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
+              <div 
+                key={tz || 'local'} 
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border transition-all hover:border-current"
+                style={{
+                  backgroundColor: 'var(--surface-alt)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
                 <div className="flex items-center gap-2 min-w-0">
-                  <MapPin className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-                  <span className="text-xs text-slate-300 truncate">{tzLabel}</span>
+                  <Zap className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--primary)' }} />
+                  <span className="text-xs truncate">{tzLabel}</span>
                 </div>
-                <span className="text-sm font-semibold text-white whitespace-nowrap">
-                  {config.viewMode === 'analog' ? tzTime.getHours().toString().padStart(2, '0') + ':' + tzTime.getMinutes().toString().padStart(2, '0') : formatTime(tzTime)}
+                <span 
+                  className="text-sm font-mono font-semibold whitespace-nowrap"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  {config.viewMode === 'analog' ? formatTimeShort(tzTime) : formatTime(tzTime)}
                 </span>
               </div>
             );
           })}
         </div>
       )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.2; }
+          50% { opacity: 0.35; }
+        }
+      `}</style>
     </Widget>
   );
 };

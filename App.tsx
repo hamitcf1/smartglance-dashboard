@@ -32,6 +32,7 @@ import { WorkTrackerWidget } from './components/widgets/WorkTrackerWidget';
 import { WorkReportsWidget } from './components/widgets/WorkReportsWidget';
 import { ChatWidget } from './components/widgets/ChatWidget';
 import { CurrencyWidget } from './components/widgets/CurrencyWidget';
+import { CountdownWidget } from './components/widgets/CountdownWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { SortableWidget } from './components/SortableWidget';
 import { Onboarding } from './components/Onboarding';
@@ -53,6 +54,7 @@ const DEFAULT_WIDGETS: WidgetInstance[] = [
   { id: 'work-reports', type: 'work-reports', size: 'large' },
   { id: 'chat', type: 'chat', size: 'large' },
   { id: 'currency', type: 'currency', size: 'medium' },
+  { id: 'countdown', type: 'countdown', size: 'medium' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 
@@ -95,9 +97,16 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGlobalSettingsOpen, setIsGlobalSettingsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const { themeName } = useTheme();
   
   // Track open settings per widget
   const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
+
+  // --- Initialize theme on mount ---
+  useEffect(() => {
+    const saved = localStorage.getItem('smart-glance-theme-name') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+  }, []);
 
   // --- Persistence ---
   useEffect(() => {
@@ -317,24 +326,16 @@ export default function App() {
             refreshTrigger={refreshTrigger}
           />
         );
+      case 'countdown':
+        return (
+          <CountdownWidget
+            {...commonProps}
+          />
+        );
       default:
         return null;
     }
   };
-
-  const { isDarkMode } = useTheme();
-
-  const bgClasses = isDarkMode
-    ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white'
-    : 'bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900';
-
-  const headerIconClasses = isDarkMode 
-    ? 'text-indigo-400'
-    : 'text-indigo-600';
-
-  const buttonHoverClasses = isDarkMode
-    ? 'hover:bg-white/10 text-slate-400 hover:text-white'
-    : 'hover:bg-slate-300/50 text-slate-600 hover:text-slate-900';
 
   // Show onboarding if not completed
   if (!hasCompletedOnboarding) {
@@ -342,11 +343,11 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${bgClasses} p-4 sm:p-8`}>
+    <div className="min-h-screen p-4 sm:p-8" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
       {/* Header */}
       <header className="max-w-7xl mx-auto flex justify-between items-center mb-8">
         <div className="flex items-center gap-2">
-          <LayoutGrid className={`w-6 h-6 ${headerIconClasses}`} />
+          <LayoutGrid className="w-6 h-6" style={{ color: 'var(--primary)' }} />
           <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
             SmartGlance
           </h1>
@@ -354,25 +355,28 @@ export default function App() {
         <div className="flex gap-2">
           <button
             onClick={handleRefresh}
-            className={`p-2 rounded-full transition-colors relative group ${buttonHoverClasses}`}
+            className="p-2 rounded-full transition-colors relative group"
+            style={{ color: 'var(--text-secondary)', backgroundColor: 'transparent' }}
             title="Refresh Widgets"
           >
-            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
+            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} style={{ color: isRefreshing ? 'var(--primary)' : 'inherit' }} />
           </button>
           <button
             onClick={() => setIsEditMode(!isEditMode)}
-            className={`p-2 rounded-full transition-colors relative group ${
-              isEditMode 
-                ? 'bg-indigo-600/20 text-indigo-400' 
-                : buttonHoverClasses
-            }`}
+            className="p-2 rounded-full transition-colors relative group"
+            style={{ 
+              color: isEditMode ? 'var(--primary)' : 'var(--text-secondary)',
+              backgroundColor: isEditMode ? 'var(--primary)' : 'transparent',
+              backgroundOpacity: isEditMode ? '0.2' : '1'
+            }}
             title="Edit Mode"
           >
             <Edit2 className="w-5 h-5" />
           </button>
           <button
             onClick={() => setIsGlobalSettingsOpen(true)}
-            className={`p-2 rounded-full transition-colors ${buttonHoverClasses}`}
+            className="p-2 rounded-full transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
             title="App Settings"
           >
             <Settings className="w-5 h-5" />
@@ -411,18 +415,29 @@ export default function App() {
 
       {/* Edit Mode Panel */}
       {isEditMode && (
-        <div className={`fixed bottom-20 left-0 right-0 ${isDarkMode ? 'bg-slate-800/95 border-white/10' : 'bg-slate-200/95 border-slate-300/50'} border-t p-6 max-w-7xl mx-auto`}>
+        <div 
+          className="fixed bottom-20 left-0 right-0 border-t p-6 max-w-7xl mx-auto z-40"
+          style={{
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--border)',
+            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.15)'
+          }}
+        >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Add Widgets</h3>
-                <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Select a widget to add to your dashboard</p>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text)' }}>Add Widgets</h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Select a widget to add to your dashboard</p>
               </div>
               <button
                 onClick={() => setIsEditMode(false)}
-                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-300'}`}
+                className="p-2 rounded-lg transition-colors"
+                style={{ 
+                  backgroundColor: 'var(--surface-alt)',
+                  color: 'var(--text-secondary)'
+                }}
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -446,11 +461,13 @@ export default function App() {
                     key={type}
                     onClick={() => addWidget(type)}
                     disabled={isAdded}
-                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                      isAdded
-                        ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    }`}
+                    className="px-4 py-3 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed border"
+                    style={{
+                      backgroundColor: isAdded ? 'var(--surface-alt)' : 'var(--primary)',
+                      color: isAdded ? 'var(--text-secondary)' : 'white',
+                      borderColor: isAdded ? 'var(--border)' : 'var(--primary)',
+                      opacity: isAdded ? 0.6 : 1
+                    }}
                   >
                     {labels[type]} {isAdded && '✓'}
                   </button>
@@ -460,7 +477,12 @@ export default function App() {
 
             <button
               onClick={resetDashboard}
-              className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm transition-colors"
+              className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors border"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                borderColor: 'var(--border)',
+                color: 'var(--text-secondary)'
+              }}
             >
               Reset to Default Layout
             </button>
@@ -469,7 +491,14 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 text-center text-slate-600 text-sm bg-slate-900/80 backdrop-blur-sm border-t border-white/5 pointer-events-none">
+      <footer 
+        className="fixed bottom-0 left-0 right-0 p-4 text-center text-sm backdrop-blur-sm border-t pointer-events-none"
+        style={{
+          backgroundColor: 'var(--surface)',
+          borderColor: 'var(--border)',
+          color: 'var(--text-secondary)'
+        }}
+      >
         <p>© {new Date().getFullYear()} SmartGlance. Powered by Google Gemini.</p>
       </footer>
 

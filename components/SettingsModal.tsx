@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, RotateCw } from 'lucide-react';
 import { UserSettings } from '../types';
-import { useTheme } from '../services/theme';
+import { useTheme, ThemeName } from '../services/theme';
 
 interface SettingsModalProps {
   settings: UserSettings;
@@ -12,7 +12,8 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose, onSave, onRestartOnboarding }) => {
   const [localSettings, setLocalSettings] = React.useState<UserSettings>(settings);
-  const { isDarkMode } = useTheme();
+  const { themeName, setThemeName, availableThemes } = useTheme();
+  const isDarkMode = themeName !== 'light';
 
   const handleChange = (key: keyof UserSettings, value: string | boolean) => {
     setLocalSettings(prev => ({ ...prev, [key]: value }));
@@ -25,94 +26,129 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onClose,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className={`${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-slate-50 border-slate-200'} border rounded-2xl w-full max-w-md shadow-2xl p-6 relative`}>
+      <div className="border rounded-2xl w-full max-w-md shadow-2xl p-6 relative" style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)' }}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Settings</h2>
-          <button onClick={onClose} className={`transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+          <h2 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>Settings</h2>
+          <button onClick={onClose} className="transition-colors" style={{ color: 'var(--text-secondary)' }}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Display Name</label>
+            <label className="text-sm font-medium" style={{ color: 'var(--text)' }}>Display Name</label>
             <input
               type="text"
               value={localSettings.userName}
               onChange={(e) => handleChange('userName', e.target.value)}
-              className={`w-full rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors ${isDarkMode ? 'bg-white/5 border border-white/10 text-white' : 'bg-white border border-slate-300 text-slate-900'}`}
+              className="w-full rounded-lg px-4 py-2 focus:outline-none focus:ring-2 transition-colors border"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                borderColor: 'var(--border)',
+                color: 'var(--text)'
+              }}
             />
           </div>
 
-          <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-300'}`}>
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--primary)', backgroundOpacity: 0.1, borderColor: 'var(--primary)', borderOpacity: 0.3 }}>
             <button
               onClick={() => {
                 onRestartOnboarding?.();
                 onClose();
               }}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-                isDarkMode
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
-              }`}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors"
+              style={{
+                backgroundColor: 'var(--primary)',
+                color: 'white'
+              }}
             >
               <RotateCw className="w-4 h-4" />
               Restart Setup Wizard
             </button>
-            <p className={`text-xs mt-2 ${isDarkMode ? 'text-emerald-300' : 'text-emerald-700'}`}>
+            <p className="text-xs mt-2" style={{ color: 'var(--primary)' }}>
               Go through the onboarding process again to reconfigure your dashboard
             </p>
           </div>
 
           <div className="space-y-4">
-             <h3 className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>Global Preferences</h3>
+             <h3 className="text-sm font-medium" style={{ color: 'var(--text)' }}>Global Preferences</h3>
              
              {/* Note: Individual Widget visibility is now largely handled by adding/removing widgets in the grid (future feature), 
                  but keeping these toggles for backward compatibility or simple hiding logic if preferred */}
              
              <div className="flex items-center justify-between">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Show Weather</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Show Weather</span>
                 <Toggle 
                   checked={localSettings.showWeather} 
                   onChange={(checked) => handleChange('showWeather', checked)} 
-                  isDarkMode={isDarkMode}
+                  isDarkMode={themeName !== 'light'}
                 />
              </div>
              
              <div className="flex items-center justify-between">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Show News Feed</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Show News Feed</span>
                 <Toggle 
                   checked={localSettings.showNews} 
                   onChange={(checked) => handleChange('showNews', checked)} 
-                  isDarkMode={isDarkMode}
+                  isDarkMode={themeName !== 'light'}
                 />
              </div>
              
              <div className="flex items-center justify-between">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Show Smart Briefing</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Show Smart Briefing</span>
                 <Toggle 
                   checked={localSettings.showBriefing} 
                   onChange={(checked) => handleChange('showBriefing', checked)} 
-                  isDarkMode={isDarkMode}
+                  isDarkMode={themeName !== 'light'}
                 />
              </div>
 
              <div className="flex items-center justify-between">
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Show Quick Links</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Show Quick Links</span>
                 <Toggle 
                   checked={localSettings.showLinks} 
                   onChange={(checked) => handleChange('showLinks', checked)} 
-                  isDarkMode={isDarkMode}
+                  isDarkMode={themeName !== 'light'}
                 />
              </div>
 
-             <div className={`flex items-center justify-between pt-4 ${isDarkMode ? 'border-white/10' : 'border-slate-200'} border-t`}>
-                <span className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Use Celsius</span>
+             <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Use Celsius</span>
                 <Toggle 
                   checked={localSettings.useCelsius} 
                   onChange={(checked) => handleChange('useCelsius', checked)} 
-                  isDarkMode={isDarkMode}
+                  isDarkMode={themeName !== 'light'}
                 />
+             </div>
+
+             <div className="pt-4 border-t space-y-3" style={{ borderColor: 'var(--border)' }}>
+                <label className="text-sm font-medium block" style={{ color: 'var(--text)' }}>Theme</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableThemes.map(t => {
+                    const themeNames: Record<string, string> = {
+                      dark: '🌙 Dark',
+                      light: '☀️ Light',
+                      dracula: '🧛 Dracula',
+                      nord: '❄️ Nord',
+                      solarized: '🌅 Solarized'
+                    };
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => setThemeName(t)}
+                        className="p-2 rounded-lg text-xs font-medium transition-all border"
+                        style={{
+                          backgroundColor: themeName === t ? 'var(--primary)' : 'var(--surface-alt)',
+                          color: themeName === t ? 'white' : 'var(--text)',
+                          borderColor: themeName === t ? 'var(--primary)' : 'var(--border)',
+                          borderWidth: themeName === t ? '2px' : '1px'
+                        }}
+                      >
+                        {themeNames[t]}
+                      </button>
+                    );
+                  })}
+                </div>
              </div>
           </div>
         </div>

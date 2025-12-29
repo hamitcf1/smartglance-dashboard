@@ -19,6 +19,7 @@ const AVAILABLE_WIDGETS = [
   { type: 'water', label: '💧 Water Tracker', description: 'Hydration tracking' },
   { type: 'work', label: '💼 Work Tracker', description: 'Work sessions & billing' },
   { type: 'work-reports', label: '📈 Work Reports', description: 'Work analytics' },
+  { type: 'countdown', label: '⏳ Countdown', description: 'Event countdown timer' },
   { type: 'darkmode', label: '🌙 Dark Mode', description: 'Theme toggle' },
   { type: 'chat', label: '💬 Gemini Chat', description: 'AI conversation with Gemini' },
   { type: 'currency', label: '💱 Currency Rates', description: 'USD, EUR, GBP, Gold, Silver' },
@@ -39,6 +40,7 @@ const COMMON_TIMEZONES = [
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+  const [theme, setTheme] = useState<'dark' | 'light' | 'dracula' | 'nord' | 'solarized'>('dark');
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>([
     'clock', 'search', 'weather', 'links', 'briefing', 'news'
   ]);
@@ -176,6 +178,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       youtube: { channels: youtubeChannels, videoCount: 6 },
     };
 
+    // Save theme selection
+    localStorage.setItem('smart-glance-theme-name', theme);
     localStorage.setItem('smart-glance-onboarding-complete', 'true');
     onComplete(settings, widgets, configs);
   };
@@ -255,8 +259,45 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </div>
           )}
 
-          {/* Step 2: Widget Selection */}
+          {/* Step 2: Theme Selection */}
           {step === 2 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Choose a theme</h2>
+                <p className="text-slate-400">Select your preferred color scheme</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(['dark', 'light', 'dracula', 'nord', 'solarized'] as const).map(t => {
+                  const themeNames: Record<string, string> = {
+                    dark: '🌙 Dark (Default)',
+                    light: '☀️ Light',
+                    dracula: '🧛 Dracula',
+                    nord: '❄️ Nord',
+                    solarized: '🌅 Solarized'
+                  };
+                  
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => setTheme(t)}
+                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                        theme === t
+                          ? 'bg-indigo-600/20 border-indigo-500 ring-2 ring-indigo-500/50'
+                          : 'bg-slate-700/30 border-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <h3 className="font-semibold text-white">{themeNames[t]}</h3>
+                      {theme === t && <Check className="w-5 h-5 text-indigo-400 mt-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Widget Selection */}
+          {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Choose your widgets</h2>
@@ -287,8 +328,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </div>
           )}
 
-          {/* Step 3: Location & Timezone */}
-          {step === 3 && (
+          {/* Step 4: Location & Timezone */}
+          {step === 4 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Location & Time</h2>
@@ -343,8 +384,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </div>
           )}
 
-          {/* Step 4: Quick Links */}
-          {step === 4 && (
+          {/* Step 5: Quick Links */}
+          {step === 5 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Quick Links</h2>
@@ -397,8 +438,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </div>
           )}
 
-          {/* Step 5: YouTube Channels */}
-          {step === 5 && (
+          {/* Step 6: YouTube Channels */}
+          {step === 6 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">YouTube Channels</h2>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Widget } from '../Widget';
-import { Globe, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { QuickLinksConfig, QuickLink } from '../../types';
 
 // Helper to generate IDs
@@ -17,11 +17,21 @@ const DEFAULT_LINKS: QuickLink[] = [
 const getFaviconUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
-    // Use Google Favicon API as fallback
     return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
   } catch {
     return '';
   }
+};
+
+// Get random pastel color for fallback
+const getColorForLink = (name: string): string => {
+  const colors = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+    '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+    '#F8B88B', '#A8E6CF'
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
 };
 
 interface QuickLinksWidgetProps {
@@ -46,6 +56,7 @@ export const QuickLinksWidget: React.FC<QuickLinksWidgetProps> = ({
   const links = config.links || DEFAULT_LINKS;
   const [newLinkName, setNewLinkName] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [faviconErrors, setFaviconErrors] = useState<Set<string>>(new Set());
 
   const addLink = () => {
     if (newLinkName && newLinkUrl) {
@@ -68,14 +79,23 @@ export const QuickLinksWidget: React.FC<QuickLinksWidgetProps> = ({
     onConfigChange({ links: links.filter(l => l.id !== id) });
   };
 
+  const handleFaviconError = (linkId: string) => {
+    setFaviconErrors(prev => new Set([...prev, linkId]));
+  };
+
   const SettingsPanel = (
     <div className="space-y-4">
       <div className="space-y-2">
-        <label className="text-xs text-slate-400">Widget Size</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Widget Size</label>
         <select 
           value={widgetSize} 
           onChange={(e) => onSizeChange(e.target.value)}
-          className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white focus:outline-none"
+          className="w-full border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
         >
           <option value="small">Small</option>
           <option value="medium">Medium</option>
@@ -84,39 +104,65 @@ export const QuickLinksWidget: React.FC<QuickLinksWidgetProps> = ({
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs text-slate-400">Add New Link</label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Add New Link</label>
         <input 
           type="text" 
           placeholder="Name (e.g., Reddit)" 
-          className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white mb-2 focus:outline-none"
+          className="w-full border rounded px-3 py-2 text-xs mb-2 focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
           value={newLinkName}
           onChange={e => setNewLinkName(e.target.value)}
         />
         <input 
           type="text" 
           placeholder="URL (e.g., reddit.com)" 
-          className="w-full bg-slate-800 border border-white/10 rounded px-2 py-1 text-sm text-white mb-2 focus:outline-none"
+          className="w-full border rounded px-3 py-2 text-xs mb-2 focus:outline-none focus:ring-2 transition-colors"
+          style={{
+            backgroundColor: 'var(--surface-alt)',
+            borderColor: 'var(--border)',
+            color: 'var(--text)'
+          }}
           value={newLinkUrl}
           onChange={e => setNewLinkUrl(e.target.value)}
         />
         <button 
           onClick={addLink}
           disabled={!newLinkName || !newLinkUrl}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded py-1 text-sm transition-colors flex items-center justify-center gap-1"
+          className="w-full text-white rounded py-2 text-xs font-medium transition-all flex items-center justify-center gap-2 border"
+          style={{
+            backgroundColor: newLinkName && newLinkUrl ? 'var(--primary)' : 'var(--surface-alt)',
+            borderColor: newLinkName && newLinkUrl ? 'var(--primary)' : 'var(--border)',
+            opacity: !newLinkName || !newLinkUrl ? 0.5 : 1
+          }}
         >
-          <Plus className="w-3 h-3" /> Add Link
+          <Plus className="w-3.5 h-3.5" /> Add Link
         </button>
       </div>
 
-      <div className="space-y-2 pt-2 border-t border-white/10">
-        <label className="text-xs text-slate-400">Manage Links</label>
-        <div className="space-y-1">
+      <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text)' }}>Manage Links</label>
+        <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
           {links.map(link => (
-            <div key={link.id} className="flex items-center justify-between bg-slate-800/50 p-2 rounded group">
-              <span className="text-sm text-slate-300 truncate max-w-[120px]">{link.name}</span>
+            <div 
+              key={link.id} 
+              className="flex items-center justify-between px-2 py-2 rounded border transition-all"
+              style={{
+                backgroundColor: 'var(--surface)',
+                borderColor: 'var(--border)'
+              }}
+            >
+              <span className="text-xs truncate max-w-[120px]" style={{ color: 'var(--text-secondary)' }}>{link.name}</span>
               <button 
                 onClick={() => removeLink(link.id)}
-                className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-900/20"
+                className="p-1 rounded transition-all hover:scale-110"
+                style={{
+                  color: 'var(--primary)',
+                  backgroundColor: 'var(--primary)' + '22'
+                }}
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -129,43 +175,132 @@ export const QuickLinksWidget: React.FC<QuickLinksWidgetProps> = ({
 
   return (
     <Widget 
-      title="Quick Links" 
+      title="🔗 Quick Links" 
       className="h-full"
       isSettingsOpen={isSettingsOpen}
       onSettingsToggle={onToggleSettings}
       settingsContent={SettingsPanel}
       dragHandleProps={dragHandleProps}
     >
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {links.map((link) => (
-          <a
-            key={link.id}
-            href={link.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group aspect-square md:aspect-auto"
-          >
-            <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform overflow-hidden">
-              <img 
-                src={getFaviconUrl(link.url)}
-                alt={link.name}
-                className="w-5 h-5"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+      <div className="space-y-4 h-full flex flex-col">
+        {/* Links Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1">
+          {links.map((link) => {
+            const shouldShowFallback = faviconErrors.has(link.id);
+            const bgColor = getColorForLink(link.name);
+            
+            return (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col items-center justify-center p-3 rounded-2xl border transition-all hover:scale-105 relative overflow-hidden"
+                style={{
+                  backgroundColor: 'var(--surface-alt)',
+                  borderColor: 'var(--border)'
                 }}
-              />
-              <Globe className="w-4 h-4 text-indigo-300 hidden" />
-            </div>
-            <span className="text-xs text-slate-400 group-hover:text-white transition-colors text-center line-clamp-1 w-full">{link.name}</span>
-          </a>
-        ))}
-        {/* Add button placeholder if empty or just generally accessible via settings */}
+              >
+                {/* Hover gradient background */}
+                <div 
+                  className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity"
+                  style={{
+                    background: bgColor,
+                    zIndex: 0
+                  }}
+                />
+
+                {/* Content */}
+                <div className="relative z-10 flex flex-col items-center justify-center gap-2">
+                  {/* Favicon Container */}
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-110 flex-shrink-0 border"
+                    style={{
+                      backgroundColor: bgColor + '22',
+                      borderColor: bgColor + '44'
+                    }}
+                  >
+                    {!shouldShowFallback ? (
+                      <img 
+                        src={getFaviconUrl(link.url)}
+                        alt={link.name}
+                        className="w-6 h-6"
+                        onError={() => handleFaviconError(link.id)}
+                      />
+                    ) : (
+                      <div 
+                        className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: bgColor }}
+                      >
+                        {link.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Link Name */}
+                  <span 
+                    className="text-xs font-semibold text-center line-clamp-2 w-full transition-colors"
+                    style={{ color: 'var(--text)' }}
+                  >
+                    {link.name}
+                  </span>
+
+                  {/* External Link Icon */}
+                  <ExternalLink 
+                    className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity mt-1"
+                    style={{ color: 'var(--primary)' }}
+                  />
+                </div>
+              </a>
+            );
+          })}
+
+          {/* Add Link Button */}
+          {links.length < 12 && (
+            <button 
+              onClick={onToggleSettings}
+              className="flex flex-col items-center justify-center p-3 rounded-2xl border-2 border-dashed transition-all hover:scale-105 group"
+              style={{
+                borderColor: 'var(--border)',
+                backgroundColor: 'transparent'
+              }}
+            >
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-all"
+                style={{
+                  backgroundColor: 'var(--primary)' + '22',
+                  color: 'var(--primary)'
+                }}
+              >
+                <Plus className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Add</span>
+            </button>
+          )}
+        </div>
+
+        {/* Footer Info */}
         {links.length === 0 && (
-          <button onClick={onToggleSettings} className="flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-white/10 hover:border-white/30 transition-colors text-slate-500 hover:text-white">
-            <Plus className="w-6 h-6 mb-1" />
-            <span className="text-xs">Add Link</span>
-          </button>
+          <div 
+            className="text-center py-6 rounded-lg border"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-secondary)'
+            }}
+          >
+            <p className="text-xs mb-2">No links yet</p>
+            <button 
+              onClick={onToggleSettings}
+              className="text-xs font-medium px-3 py-1 rounded-lg border transition-all"
+              style={{
+                borderColor: 'var(--primary)',
+                color: 'var(--primary)'
+              }}
+            >
+              Add your first link
+            </button>
+          </div>
         )}
       </div>
     </Widget>

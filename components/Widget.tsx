@@ -24,7 +24,11 @@ export const Widget: React.FC<WidgetProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col shadow-lg transition-all hover:bg-white/10 relative group h-full focus-within:ring-2 focus-within:ring-indigo-400 ${className}`}
+      className={`backdrop-blur-md border rounded-2xl flex flex-col shadow-lg transition-all relative group h-full focus-within:ring-2 focus-within:ring-indigo-400 ${className}`}
+      style={{
+        backgroundColor: 'var(--surface)',
+        borderColor: 'var(--border)',
+      }}
       role="region"
       aria-label={typeof title === 'string' ? title : 'Widget'}
     >
@@ -42,7 +46,7 @@ export const Widget: React.FC<WidgetProps> = ({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3h2v2H9V3zm0 4h2v2H9V7zm0 4h2v2H9v-2zm4-8h2v2h-2V3zm0 4h2v2h-2V7zm0 4h2v2h-2v-2z"/></svg>
             </button>
           )}
-          {title && <div className="text-sm font-medium text-indigo-300 uppercase tracking-wider">{title}</div>}
+          {title && <div className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--primary)' }}>{title}</div>}
         </div>
         
         <div className="flex items-center gap-1">
