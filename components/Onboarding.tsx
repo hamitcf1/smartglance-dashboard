@@ -23,6 +23,7 @@ const AVAILABLE_WIDGETS = [
   { type: 'darkmode', label: '🌙 Dark Mode', description: 'Theme toggle' },
   { type: 'chat', label: '💬 Gemini Chat', description: 'AI conversation with Gemini' },
   { type: 'currency', label: '💱 Currency Rates', description: 'USD, EUR, GBP, Gold, Silver' },
+  { type: 'services', label: '🔗 Services', description: '.arr services status monitor' },
 ];
 
 const COMMON_TIMEZONES = [
@@ -174,7 +175,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     const widgets: WidgetInstance[] = selectedWidgets.map((type, idx) => ({
       id: type,
       type: type as any,
-      size: ['large', 'briefing', 'news', 'youtube', 'calendar', 'work', 'work-reports'].includes(type) ? 'large' : 'small',
+      size: ['large', 'briefing', 'news', 'youtube', 'calendar', 'work', 'work-reports', 'services'].includes(type) ? 'large' : 'small',
     }));
 
     const configs: Record<string, any> = {

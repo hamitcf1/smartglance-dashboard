@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, LayoutGrid, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Settings, RefreshCw, LayoutGrid, Plus, Edit2, Trash2, X, LogOut } from 'lucide-react';
 import { useTheme } from './services/theme';
+import { loginService } from './services/login';
+import { Login } from './components/Login';
 import { 
   DndContext, 
   closestCenter, 
@@ -71,6 +73,14 @@ const DEFAULT_SETTINGS: UserSettings = {
 };
 
 export default function App() {
+  // --- Authentication State ---
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return loginService.isAuthenticated();
+  });
+  const [authError, setAuthError] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [showLoginSetup, setShowLoginSetup] = useState(false);
+
   // --- Onboarding State ---
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
     return localStorage.getItem('smart-glance-onboarding-complete') === 'true';
@@ -122,6 +132,38 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('smart-glance-configs', JSON.stringify(configs));
   }, [configs]);
+
+  // --- Authentication Handler ---
+  const handleLogin = (username: string, password: string) => {
+    setIsAuthLoading(true);
+    setAuthError('');
+
+    // Simulate auth delay
+    setTimeout(() => {
+      if (!loginService.hasCredentials()) {
+        // First login - set credentials
+        loginService.setCredentials(username, password);
+        loginService.createSession(username);
+        setIsAuthenticated(true);
+        setShowLoginSetup(false);
+      } else if (loginService.verifyLogin(username, password)) {
+        // Subsequent login - verify credentials
+        loginService.createSession(username);
+        setIsAuthenticated(true);
+      } else {
+        setAuthError('Invalid username or password');
+      }
+      setIsAuthLoading(false);
+    }, 500);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      loginService.clearSession();
+      setIsAuthenticated(false);
+      setAuthError('');
+    }
+  };
 
   // --- Onboarding Handler ---
   const handleOnboardingComplete = (
@@ -348,6 +390,11 @@ export default function App() {
     }
   };
 
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} isLoading={isAuthLoading} error={authError} />;
+  }
+
   // Show onboarding if not completed
   if (!hasCompletedOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
@@ -391,6 +438,14 @@ export default function App() {
             title="App Settings"
           >
             <Settings className="w-5 h-5" />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-full transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </header>
