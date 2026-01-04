@@ -37,7 +37,7 @@ export type WidgetSize = 'small' | 'medium' | 'large';
 
 export interface WidgetInstance {
   id: string;
-  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode' | 'work' | 'work-reports' | 'chat' | 'currency' | 'countdown';
+  type: 'clock' | 'weather' | 'news' | 'briefing' | 'links' | 'search' | 'youtube' | 'email' | 'calendar' | 'water' | 'darkmode' | 'work' | 'work-reports' | 'chat' | 'currency' | 'countdown' | 'services';
   size: WidgetSize;
 }
 
@@ -106,4 +106,16 @@ export interface WorkConfig extends WidgetConfig {
   hourlyRate?: number;
   sessions?: WorkSession[];
   currentStart?: string | null;
+}
+
+export interface ServiceItem {
+  id: string;
+  name: string;
+  url: string;
+  isActive: boolean;
+  isChecking: boolean;
+}
+
+export interface ServicesConfig extends WidgetConfig {
+  services?: ServiceItem[];
 }

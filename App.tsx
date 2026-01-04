@@ -33,6 +33,7 @@ import { WorkReportsWidget } from './components/widgets/WorkReportsWidget';
 import { ChatWidget } from './components/widgets/ChatWidget';
 import { CurrencyWidget } from './components/widgets/CurrencyWidget';
 import { CountdownWidget } from './components/widgets/CountdownWidget';
+import { ServicesWidget } from './components/widgets/ServicesWidget';
 import { SettingsModal } from './components/SettingsModal';
 import { SortableWidget } from './components/SortableWidget';
 import { Onboarding } from './components/Onboarding';
@@ -55,6 +56,7 @@ const DEFAULT_WIDGETS: WidgetInstance[] = [
   { id: 'chat', type: 'chat', size: 'large' },
   { id: 'currency', type: 'currency', size: 'medium' },
   { id: 'countdown', type: 'countdown', size: 'medium' },
+  { id: 'services', type: 'services', size: 'large' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 
@@ -330,6 +332,15 @@ export default function App() {
         return (
           <CountdownWidget
             {...commonProps}
+          />
+        );
+      case 'services':
+        return (
+          <ServicesWidget
+            {...commonProps}
+            config={configs[widget.id] || {}}
+            onConfigChange={(c) => updateWidgetConfig(widget.id, c)}
+            refreshTrigger={refreshTrigger}
           />
         );
       default:
