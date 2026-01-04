@@ -14,6 +14,8 @@ const DEFAULT_WIDGETS = [
   { id: 'work-reports', type: 'work-reports', size: 'large' },
   { id: 'chat', type: 'chat', size: 'large' },
   { id: 'currency', type: 'currency', size: 'medium' },
+  { id: 'countdown', type: 'countdown', size: 'medium' },
+  { id: 'services', type: 'services', size: 'large' },
   { id: 'darkmode', type: 'darkmode', size: 'small' },
 ];
 
