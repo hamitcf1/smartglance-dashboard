@@ -121,8 +121,13 @@ export default function App() {
       // Load from Realtime DB
       const dbState = await realtimeDBService.getDashboardState(uid);
       if (dbState) {
-        setWidgets(dbState.widgets);
-        setConfigs(dbState.configs);
+        // Only update if different
+        if (JSON.stringify(widgets) !== JSON.stringify(dbState.widgets)) {
+          setWidgets(dbState.widgets);
+        }
+        if (JSON.stringify(configs) !== JSON.stringify(dbState.configs)) {
+          setConfigs(dbState.configs);
+        }
       } else {
         // First time user - set defaults
         await realtimeDBService.saveDashboardState(uid, DEFAULT_WIDGETS, {});
@@ -133,7 +138,9 @@ export default function App() {
       // Load user profile from Firestore
       const profile = await firestoreUserService.getUserProfile(uid);
       if (profile) {
-        setSettings(profile.settings);
+        if (JSON.stringify(settings) !== JSON.stringify(profile.settings)) {
+          setSettings(profile.settings);
+        }
         setHasCompletedOnboarding(true);
       } else {
         // New user - create profile
@@ -151,8 +158,12 @@ export default function App() {
 
       // Subscribe to real-time updates
       const unsubscribe = realtimeDBService.onDashboardChange(uid, (state) => {
-        setWidgets(state.widgets);
-        setConfigs(state.configs);
+        if (JSON.stringify(widgets) !== JSON.stringify(state.widgets)) {
+          setWidgets(state.widgets);
+        }
+        if (JSON.stringify(configs) !== JSON.stringify(state.configs)) {
+          setConfigs(state.configs);
+        }
       });
 
       return () => unsubscribe();
