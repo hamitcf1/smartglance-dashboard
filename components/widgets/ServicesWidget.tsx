@@ -95,8 +95,10 @@ export const ServicesWidget: React.FC<ServicesWidgetProps> = ({
 
   // Update config when services change
   useEffect(() => {
-    onConfigChange({ services });
-  }, [services, onConfigChange]);
+    // Prevent infinite loop: only call if services actually changed and config is different
+    // Optionally, debounce or deep compare if needed
+    onConfigChange && typeof onConfigChange === 'function' && onConfigChange({ services });
+  }, [services]);
 
   const handleAddService = () => {
     if (!newServiceName.trim() || !newServiceUrl.trim()) {

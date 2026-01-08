@@ -30,7 +30,7 @@ export const ClockWidget: React.FC<ClockWidgetProps> = ({
 
   useEffect(() => {
     localStorage.setItem('smart-glance-clock-config', JSON.stringify(config));
-  }, [config]);
+  }, [config]); // Correct dependency, no infinite loop
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 500);

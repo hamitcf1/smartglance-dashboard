@@ -95,7 +95,8 @@ export const YouTubeWidget: React.FC<YouTubeWidgetProps> = ({
 
   const addChannel = (id: string, name: string) => {
     if (!channels.find(c => c.id === id)) {
-      onConfigChange({
+      // Only call onConfigChange if channels actually changed
+      onConfigChange && typeof onConfigChange === 'function' && onConfigChange({
         channels: [...channels, { id, name }]
       });
     }
@@ -104,9 +105,12 @@ export const YouTubeWidget: React.FC<YouTubeWidgetProps> = ({
   };
 
   const removeChannel = (id: string) => {
-    onConfigChange({
-      channels: channels.filter(c => c.id !== id)
-    });
+    const newChannels = channels.filter(c => c.id !== id);
+    if (newChannels.length !== channels.length) {
+      onConfigChange && typeof onConfigChange === 'function' && onConfigChange({
+        channels: newChannels
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {

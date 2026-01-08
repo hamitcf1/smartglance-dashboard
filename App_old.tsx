@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, LayoutGrid, Edit2, Trash2, X, LogOut, Save } from 'lucide-react';
+import { Settings, RefreshCw, LayoutGrid, Plus, Edit2, Trash2, X, LogOut } from 'lucide-react';
 import { useTheme } from './services/theme';
-import { firebaseAuthService } from './services/firebaseAuth';
-import { realtimeDBService } from './services/realtimeDB';
-import { firestoreUserService } from './services/firestoreUser';
+import { loginService } from './services/login';
 import { Login } from './components/Login';
 import { 
   DndContext, 
@@ -67,6 +65,7 @@ const DEFAULT_WIDGETS: WidgetInstance[] = [
 const DEFAULT_SETTINGS: UserSettings = {
   userName: 'User',
   useCelsius: true,
+  // These are now controlled by widget existence/layout, but kept for modal
   showNews: true,
   showWeather: true,
   showBriefing: true,
@@ -75,93 +74,45 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 export default function App() {
   // --- Authentication State ---
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return loginService.isAuthenticated();
+  });
   const [authError, setAuthError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [showLoginSetup, setShowLoginSetup] = useState(false);
 
   // --- Onboarding State ---
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => {
+    return localStorage.getItem('smart-glance-onboarding-complete') === 'true';
+  });
 
   // --- State ---
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
-  const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS);
-  const [configs, setConfigs] = useState<Record<string, WidgetConfig>>({});
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    const saved = localStorage.getItem('smart-glance-settings');
+    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+  });
+
+  const [widgets, setWidgets] = useState<WidgetInstance[]>(() => {
+    const saved = localStorage.getItem('smart-glance-layout');
+    // Simply return what's saved, or default if nothing saved
+    // Do NOT auto-add missing widgets - respect user deletions
+    return saved ? JSON.parse(saved) : DEFAULT_WIDGETS;
+  });
+
+  const [configs, setConfigs] = useState<Record<string, WidgetConfig>>(() => {
+    const saved = localStorage.getItem('smart-glance-configs');
+    return saved ? JSON.parse(saved) : {};
+  });
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGlobalSettingsOpen, setIsGlobalSettingsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
   const { themeName } = useTheme();
   
   // Track open settings per widget
   const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
-
-  // --- Initialize Firebase Auth Listener ---
-  useEffect(() => {
-    const unsubscribe = firebaseAuthService.onAuthStateChange((user) => {
-      if (user) {
-        setCurrentUser(user);
-        loadUserData(user.uid);
-      } else {
-        setCurrentUser(null);
-        setIsDataLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // --- Load user data from Firebase ---
-  const loadUserData = async (uid: string) => {
-    setIsDataLoading(true);
-    try {
-      // Load from Realtime DB
-      const dbState = await realtimeDBService.getDashboardState(uid);
-      if (dbState) {
-        setWidgets(dbState.widgets);
-        setConfigs(dbState.configs);
-      } else {
-        // First time user - set defaults
-        await realtimeDBService.saveDashboardState(uid, DEFAULT_WIDGETS, {});
-        setWidgets(DEFAULT_WIDGETS);
-        setConfigs({});
-      }
-
-      // Load user profile from Firestore
-      const profile = await firestoreUserService.getUserProfile(uid);
-      if (profile) {
-        setSettings(profile.settings);
-        setHasCompletedOnboarding(true);
-      } else {
-        // New user - create profile
-        const defaultProfile = {
-          uid,
-          email: currentUser?.email || '',
-          displayName: currentUser?.displayName || 'User',
-          settings: DEFAULT_SETTINGS,
-          defaultTemplate: 'default',
-        };
-        await firestoreUserService.createOrUpdateUserProfile(uid, defaultProfile);
-        setSettings(DEFAULT_SETTINGS);
-        setHasCompletedOnboarding(false);
-      }
-
-      // Subscribe to real-time updates
-      const unsubscribe = realtimeDBService.onDashboardChange(uid, (state) => {
-        setWidgets(state.widgets);
-        setConfigs(state.configs);
-      });
-
-      return () => unsubscribe();
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    } finally {
-      setIsDataLoading(false);
-    }
-  };
 
   // --- Initialize theme on mount ---
   useEffect(() => {
@@ -169,78 +120,53 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', saved);
   }, []);
 
-  // --- Auto-save to Firebase (debounced) ---
+  // --- Persistence ---
   useEffect(() => {
-    if (!currentUser || isDataLoading) return;
+    localStorage.setItem('smart-glance-settings', JSON.stringify(settings));
+  }, [settings]);
 
-    const saveTimer = setTimeout(async () => {
-      setIsSyncing(true);
-      try {
-        await realtimeDBService.saveDashboardState(currentUser.uid, widgets, configs);
-      } catch (error) {
-        console.error('Error syncing dashboard state:', error);
-      } finally {
-        setIsSyncing(false);
-      }
-    }, 1000); // Debounce for 1 second
-
-    return () => clearTimeout(saveTimer);
-  }, [widgets, configs, currentUser, isDataLoading]);
-
-  // --- Auto-save settings to Firestore ---
   useEffect(() => {
-    if (!currentUser || isDataLoading) return;
+    localStorage.setItem('smart-glance-layout', JSON.stringify(widgets));
+  }, [widgets]);
 
-    const saveTimer = setTimeout(async () => {
-      try {
-        await firestoreUserService.updateUserSettings(currentUser.uid, settings);
-      } catch (error) {
-        console.error('Error saving settings:', error);
-      }
-    }, 1000);
-
-    return () => clearTimeout(saveTimer);
-  }, [settings, currentUser, isDataLoading]);
+  useEffect(() => {
+    localStorage.setItem('smart-glance-configs', JSON.stringify(configs));
+  }, [configs]);
 
   // --- Authentication Handler ---
-  const handleLogin = async (email: string, password: string, isRegister = false) => {
+  const handleLogin = (username: string, password: string) => {
     setIsAuthLoading(true);
     setAuthError('');
 
-    try {
-      const result = isRegister 
-        ? await firebaseAuthService.register(email, password)
-        : await firebaseAuthService.login(email, password);
-
-      if (result.success) {
-        // Auth state listener will handle the rest
+    // Simulate auth delay
+    setTimeout(() => {
+      if (!loginService.hasCredentials()) {
+        // First login - set credentials
+        loginService.setCredentials(username, password);
+        loginService.createSession(username);
+        setIsAuthenticated(true);
+        setShowLoginSetup(false);
+      } else if (loginService.verifyLogin(username, password)) {
+        // Subsequent login - verify credentials
+        loginService.createSession(username);
+        setIsAuthenticated(true);
       } else {
-        setAuthError(result.error || 'Authentication failed');
+        setAuthError('Invalid username or password');
       }
-    } catch (error) {
-      setAuthError('An unexpected error occurred');
-      console.error('Auth error:', error);
-    } finally {
       setIsAuthLoading(false);
-    }
+    }, 500);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      try {
-        realtimeDBService.unsubscribe(currentUser.uid);
-        await firebaseAuthService.logout();
-        setCurrentUser(null);
-        setAuthError('');
-      } catch (error) {
-        setAuthError('Error during logout');
-        console.error('Logout error:', error);
-      }
+      loginService.clearSession();
+      setIsAuthenticated(false);
+      setAuthError('');
     }
   };
 
   // --- Onboarding Handler ---
-  const handleOnboardingComplete = async (
+  const handleOnboardingComplete = (
     newSettings: UserSettings,
     newWidgets: WidgetInstance[],
     newConfigs: Record<string, WidgetConfig>
@@ -249,23 +175,18 @@ export default function App() {
     setWidgets(newWidgets);
     setConfigs(newConfigs);
     setHasCompletedOnboarding(true);
+  };
 
-    // Save to Firebase
-    if (currentUser) {
-      try {
-        await firestoreUserService.updateUserSettings(currentUser.uid, newSettings);
-        await realtimeDBService.saveDashboardState(currentUser.uid, newWidgets, newConfigs);
-      } catch (error) {
-        console.error('Error saving onboarding data:', error);
-      }
-    }
+  const handleRestartOnboarding = () => {
+    setHasCompletedOnboarding(false);
+    localStorage.removeItem('smart-glance-onboarding-complete');
   };
 
   // --- Handlers ---
   const handleRefresh = () => {
     setIsRefreshing(true);
     setRefreshTrigger(prev => prev + 1);
-    setTimeout(() => setIsRefreshing(false), 1000);
+    setTimeout(() => setIsRefreshing(false), 1000); // Visual feedback duration
   };
 
   const updateWidgetConfig = (id: string, newConfig: Partial<WidgetConfig>) => {
@@ -469,23 +390,8 @@ export default function App() {
     }
   };
 
-  // Show loading screen
-  if (!currentUser && isDataLoading) {
-    return (
-      <div 
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}
-      >
-        <div className="text-center">
-          <div className="animate-spin mb-4">⏳</div>
-          <p>Loading SmartGlance...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show login if not authenticated
-  if (!currentUser) {
+  if (!isAuthenticated) {
     return <Login onLogin={handleLogin} isLoading={isAuthLoading} error={authError} />;
   }
 
@@ -504,12 +410,7 @@ export default function App() {
             SmartGlance
           </h1>
         </div>
-        <div className="flex gap-2 items-center">
-          {isSyncing && (
-            <div className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
-              Syncing...
-            </div>
-          )}
+        <div className="flex gap-2">
           <button
             onClick={handleRefresh}
             className="p-2 rounded-full transition-colors relative group"
@@ -664,7 +565,7 @@ export default function App() {
           color: 'var(--text-secondary)'
         }}
       >
-        <p>© {new Date().getFullYear()} SmartGlance. Powered by Google Gemini & Firebase.</p>
+        <p>© {new Date().getFullYear()} SmartGlance. Powered by Google Gemini.</p>
       </footer>
 
       {/* Global Settings Modal */}
@@ -673,7 +574,7 @@ export default function App() {
           settings={settings}
           onClose={() => setIsGlobalSettingsOpen(false)}
           onSave={setSettings}
-          onRestartOnboarding={() => setHasCompletedOnboarding(false)}
+          onRestartOnboarding={handleRestartOnboarding}
         />
       )}
     </div>

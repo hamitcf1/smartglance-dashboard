@@ -271,7 +271,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   borderColor: 'var(--border)',
                   color: 'var(--text)',
                   border: '1px solid var(--border)',
-                  focusRingColor: 'var(--primary)'
+                  // ...existing code... (removed invalid focusRingColor property)
                 }}
                 autoFocus
               />

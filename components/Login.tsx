@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff, LayoutGrid } from 'lucide-react';
+import { LogIn, Eye, EyeOff, LayoutGrid, AlertCircle } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (username: string, password: string) => void;
+  onLogin: (email: string, password: string, isRegister?: boolean) => void;
   isLoading?: boolean;
   error?: string;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() && password.trim()) {
-      onLogin(username, password);
+    
+    if (!email.trim() || !password.trim()) {
+      return;
     }
+
+    if (isRegisterMode && password !== confirmPassword) {
+      return;
+    }
+
+    onLogin(email, password, isRegisterMode);
   };
 
   return (
@@ -47,36 +56,67 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
             borderColor: 'var(--border)',
           }}
         >
+          {/* Mode Toggle */}
+          <div className="flex gap-2 mb-6">
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(false)}
+              className="flex-1 px-4 py-2 rounded-lg font-medium transition-all text-sm"
+              style={{
+                backgroundColor: !isRegisterMode ? 'var(--primary)' : 'var(--surface-alt)',
+                color: !isRegisterMode ? 'white' : 'var(--text-secondary)',
+                borderColor: 'var(--border)',
+                border: '1px solid'
+              }}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(true)}
+              className="flex-1 px-4 py-2 rounded-lg font-medium transition-all text-sm"
+              style={{
+                backgroundColor: isRegisterMode ? 'var(--primary)' : 'var(--surface-alt)',
+                color: isRegisterMode ? 'white' : 'var(--text-secondary)',
+                borderColor: 'var(--border)',
+                border: '1px solid'
+              }}
+            >
+              Register
+            </button>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div 
-              className="mb-4 p-3 rounded-lg text-sm border"
+              className="mb-4 p-3 rounded-lg text-sm border flex gap-2 items-start"
               style={{
                 backgroundColor: 'rgba(239, 68, 68, 0.1)',
                 borderColor: 'rgba(239, 68, 68, 0.3)',
                 color: '#ef4444'
               }}
             >
-              {error}
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Username Input */}
+            {/* Email Input */}
             <div>
               <label 
-                htmlFor="username"
+                htmlFor="email"
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Username
+                Email Address
               </label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
                 disabled={isLoading}
                 className="w-full px-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 style={{
@@ -94,7 +134,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Password
+                Password {isRegisterMode && <span className="text-red-500">*</span>}
               </label>
               <div className="relative">
                 <input
@@ -102,7 +142,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={isRegisterMode ? 'At least 6 characters' : 'Enter your password'}
                   disabled={isLoading}
                   className="w-full px-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2"
                   style={{
@@ -130,10 +170,42 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
               </div>
             </div>
 
-            {/* Login Button */}
+            {/* Confirm Password Input (Register Mode Only) */}
+            {isRegisterMode && (
+              <div>
+                <label 
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                  disabled={isLoading}
+                  className="w-full px-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: 'var(--surface-alt)',
+                    borderColor: password !== confirmPassword ? '#ef4444' : 'var(--border)',
+                    color: 'var(--text)',
+                  }}
+                />
+                {isRegisterMode && password !== confirmPassword && (
+                  <p className="text-xs mt-1" style={{ color: '#ef4444' }}>
+                    Passwords do not match
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || !username.trim() || !password.trim()}
+              disabled={isLoading || !email.trim() || !password.trim() || (isRegisterMode && password !== confirmPassword)}
               className="w-full mt-6 px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: 'var(--primary)',
@@ -142,12 +214,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
               {isLoading ? (
                 <>
                   <div className="animate-spin">⏳</div>
-                  Signing in...
+                  {isRegisterMode ? 'Creating account...' : 'Signing in...'}
                 </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  Sign In
+                  {isRegisterMode ? 'Create Account' : 'Sign In'}
                 </>
               )}
             </button>
@@ -162,7 +234,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, isLoading = false, error 
               color: 'var(--text-secondary)'
             }}
           >
-            <p>Credentials are encrypted and stored locally. Never shared.</p>
+            <p>Secure Firebase Authentication. Your data is encrypted and private.</p>
           </div>
         </div>
 
